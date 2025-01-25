@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Aether.Abstractions.Messaging;
+using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
-using Aether.Messaging.Configuration;
 
 namespace Aether.Messaging;
 
@@ -11,10 +11,10 @@ internal class DefaultPublisher : IPublisher
     private readonly PublishConfig publishConfig;
     private readonly DefaultSubjectTypeMapper subjectTypeMapper;
 
-    public DefaultPublisher(PublishConfig publishConfig)
+    public DefaultPublisher(PublishConfig publishConfig, IPublisherProvider providerPublisher)
     {
         this.publishConfig = publishConfig ?? throw new ArgumentNullException(nameof(publishConfig));
-        providerPublisher = publishConfig.PublisherProvider ?? throw new InvalidOperationException("ProviderPublisher cannot be null.");
+        this.providerPublisher = providerPublisher ?? throw new ArgumentNullException(nameof(providerPublisher)); 
 
         subjectTypeMapper = DefaultSubjectTypeMapper.From(publishConfig);
     }

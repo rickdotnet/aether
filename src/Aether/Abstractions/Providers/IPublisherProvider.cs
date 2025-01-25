@@ -1,5 +1,5 @@
 using Aether.Abstractions.Messaging;
-using Aether.Messaging.Configuration;
+using Aether.Abstractions.Messaging.Configuration;
 
 namespace Aether.Abstractions.Providers;
 

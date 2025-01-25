@@ -1,41 +1,7 @@
-﻿using Aether.Abstractions.Messaging;
-using Aether.Abstractions.Providers;
+﻿namespace Aether.Abstractions.Messaging.Configuration;
 
-namespace Aether.Messaging.Configuration;
-
-public record ConsumerConfig
-{
-    public static ConsumerConfig Default => new();
-
-    /// <summary>
-    /// Unique name for the consumer 
-    /// </summary>
-    public string Name { get; set; } = $"aether-{Guid.NewGuid().ToString()[..4]}";
-    
-    /// <summary>
-    /// Indicates the type of consumer to use
-    /// </summary>
-    public DurableType DurableType { get; set; } = DurableType.Transient;
-    
-    // need to configure the NATS consumer options
-    // max ack pending, etc
-    
-    public AckStrategy AckStrategy { get; set; } = AckStrategy.Default;
-}
-
-public enum DurableType
-{
-    Transient,
-    //Ephemeral,
-    Durable,
-}
 public record EndpointConfig
 {
-    /// <summary>
-    /// Defaults to AetherConfig.InstanceId
-    /// </summary>
-    public string? InstanceId { get; internal set; }
-    
     /// <summary>
     /// Optional namespace for isolation. Defaults to AetherConfig.DefaultNamespace
     /// </summary>
@@ -60,7 +26,7 @@ public record EndpointConfig
     /// <summary>
     /// Set by AetherClient
     /// </summary>
-    internal Type? EndpointType { get; set; }
+    internal Type? EndpointType { get; set; } // hmmm
 }
 
 public static class EndpointConfigExtensions

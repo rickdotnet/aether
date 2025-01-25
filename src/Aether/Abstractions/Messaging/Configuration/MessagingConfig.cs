@@ -1,6 +1,4 @@
-﻿using Aether.Abstractions.Messaging;
-
-namespace Aether.Messaging.Configuration;
+﻿namespace Aether.Abstractions.Messaging.Configuration;
 
 /// <summary>
 /// Base configuration for Aether

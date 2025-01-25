@@ -1,7 +1,7 @@
 using Aether.Abstractions.Messaging;
+using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
 using Aether.Messaging;
-using Aether.Messaging.Configuration;
 using Microsoft.Extensions.Logging;
 using NATS.Client.Core;
 

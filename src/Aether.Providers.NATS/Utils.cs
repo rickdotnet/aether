@@ -1,4 +1,4 @@
-using Aether.Messaging.Configuration;
+using Aether.Abstractions.Messaging.Configuration;
 
 namespace Aether.Providers.NATS;
 

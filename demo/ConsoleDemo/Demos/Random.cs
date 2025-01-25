@@ -1,5 +1,5 @@
 using Aether;
-using Aether.Messaging.Configuration;
+using Aether.Abstractions.Messaging.Configuration;
 using ConsoleDemo.Endpoints;
 using RickDotNet.Extensions.Base;
 

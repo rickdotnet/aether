@@ -1,5 +1,5 @@
+using Aether.Abstractions.Messaging.Configuration;
 using Aether.Messaging;
-using Aether.Messaging.Configuration;
 
 namespace Aether.Subscriptions;
 

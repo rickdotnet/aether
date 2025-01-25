@@ -1,6 +1,6 @@
 using Aether.Abstractions.Messaging;
+using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
-using Aether.Messaging.Configuration;
 
 namespace Aether.Messaging;
 
@@ -47,8 +47,7 @@ public class SynchronousHub : IMessageHub
 
     public IPublisher CreatePublisher(PublishConfig publishConfig)
     {
-        publishConfig.PublisherProvider = publisherProvider;
-        return new DefaultPublisher(publishConfig);
+        return new DefaultPublisher(publishConfig, publisherProvider);
     }
 
     // private EndpointConfig SetEndpointDefaults(EndpointConfig config, Type? endpointType = null) 

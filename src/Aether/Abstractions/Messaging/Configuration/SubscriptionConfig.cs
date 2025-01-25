@@ -1,4 +1,6 @@
-﻿namespace Aether.Messaging.Configuration;
+﻿using Aether.Messaging;
+
+namespace Aether.Abstractions.Messaging.Configuration;
 
 public record SubscriptionConfig
 {
