@@ -8,7 +8,13 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\Aether.Providers.NATS\Aether.Providers.NATS.csproj" />
       <ProjectReference Include="..\..\src\Aether\Aether.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
+      <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     </ItemGroup>
 
 </Project>

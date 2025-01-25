@@ -1,7 +1,4 @@
-﻿using Aether; 
+﻿using ConsoleDemo.Demos;
 
-var aether = new AetherClient();
-aether.Messaging.Test();
-
-// apollo... coming in hot
-//aether.Messaging.AddHandler(endpointConfig, handler);
+//await InMemory.Run();
+await Nats.Run();
