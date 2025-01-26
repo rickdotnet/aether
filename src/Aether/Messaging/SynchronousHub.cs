@@ -18,28 +18,29 @@ public class SynchronousHub : IMessageHub
 
     public IAetherEndpoint AddEndpoint<T>(EndpointConfig endpointConfig)
     {
-        var config = endpointConfig with { EndpointType = typeof(T) };
-        return new SynchronousEndpoint(config, subProvider);
+        var endpointContext = new EndpointContext(endpointConfig, subProvider, endpointType: typeof(T));
+        return new SynchronousEndpoint(endpointContext);
     }
 
     public IAetherEndpoint AddEndpoint(Type endpointType, EndpointConfig endpointConfig)
     {
-        var config = endpointConfig with { EndpointType = endpointType };
-        return new SynchronousEndpoint(config, subProvider);
+        var endpointContext = new EndpointContext(endpointConfig, subProvider, endpointType: endpointType);
+        return new SynchronousEndpoint(endpointContext);
     }
 
     public IAetherEndpoint AddEndpoint<T>(EndpointConfig endpointConfig, T instance) where T : class
     {
-        var config = endpointConfig with { EndpointType = typeof(T) };
         genericEndpointProvider ??= new();
         genericEndpointProvider.AddService(instance); 
         
-        return new SynchronousEndpoint(config, subProvider, endpointProvider: genericEndpointProvider);
+        var endpointContext = new EndpointContext(endpointConfig, subProvider, endpointType: typeof(T), endpointProvider: genericEndpointProvider);
+        return new SynchronousEndpoint(endpointContext);
     }
 
     public IAetherEndpoint AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler)
     {
-        return new SynchronousEndpoint(endpointConfig, subProvider, handler: handler);
+        var endpointContext = new EndpointContext(endpointConfig, subProvider, handler: handler);
+        return new SynchronousEndpoint(endpointContext);
     }
 
     public IPublisher CreatePublisher(EndpointConfig endpointConfig)
@@ -49,19 +50,4 @@ public class SynchronousHub : IMessageHub
     {
         return new DefaultPublisher(publishConfig, publisherProvider);
     }
-
-    // private EndpointConfig SetEndpointDefaults(EndpointConfig config, Type? endpointType = null) 
-    //     => config with
-    //     {
-    //         InstanceId = config.InstanceId ?? aetherConfig.InstanceId,
-    //         ConsumerName = config.ConsumerName 
-    //                        ?? aetherConfig.DefaultConsumerName 
-    //                        ?? throw new Exception("ConsumerName is required."),
-    //         CreateMissingResources = config.InternalCreateMissingResources ?? aetherConfig.CreateMissingResources,
-    //         AckStrategy = config.InternalAckStrategy ?? aetherConfig.AckStrategy,
-    //         Namespace = config.Namespace ?? aetherConfig.DefaultNamespace,
-    //         EndpointType = config.EndpointType ?? endpointType,
-    //         SubscriptionProvider = config.SubscriptionProvider ?? defaultSubscriptionProvider,
-    //         EndpointProvider = config.EndpointProvider ?? endpointProvider
-    //     };
 }

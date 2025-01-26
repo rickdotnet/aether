@@ -46,8 +46,8 @@ public class DefaultSubjectTypeMapper : ISubjectTypeMapper
     private static string GetSubject(PublishConfig config)
         => GetSubject((config.Namespace, config.EndpointName, EndpointType: null, config.Subject));
 
-    private static string GetSubject(SubscriptionConfig config)
-        => GetSubject((config.Namespace, config.EndpointName, config.EndpointType, config.Subject));
+    private static string GetSubject(SubscriptionConfig subConfig)
+        => GetSubject((subConfig.EndpointConfig.Namespace, subConfig.EndpointConfig.EndpointName, subConfig.EndpointType, subConfig.EndpointConfig.Subject));
 
     private static string GetSubject(
         (string? Namespace, string? EndpointName, Type? EndpointType, string? EndpointSubject) config)

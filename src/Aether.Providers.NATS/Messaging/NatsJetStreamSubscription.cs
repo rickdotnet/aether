@@ -4,7 +4,6 @@ using Aether.Messaging;
 using Microsoft.Extensions.Logging;
 using NATS.Client.Core;
 using NATS.Client.JetStream;
-using NATS.Client.JetStream.Models;
 using ConsumerConfig = NATS.Client.JetStream.Models.ConsumerConfig;
 
 namespace Aether.Providers.NATS.Messaging;
@@ -13,7 +12,9 @@ internal class NatsJetStreamSubscription : ISubscription
 {
     private readonly INatsConnection connection;
     private readonly ILogger<NatsJetStreamSubscription> logger;
-    private readonly SubscriptionConfig config;
+    private readonly SubscriptionConfig subConfig;
+    private readonly EndpointConfig endpointConfig;
+    private readonly ConsumerConfig consumerConfig;
     private readonly Func<MessageContext, CancellationToken, Task> handler;
     private readonly string endpointSubject;
     private readonly Dictionary<string, Type> subjectTypeMapping;
@@ -21,65 +22,52 @@ internal class NatsJetStreamSubscription : ISubscription
     public NatsJetStreamSubscription(
         INatsConnection connection,
         ILogger<NatsJetStreamSubscription> logger,
-        SubscriptionConfig config,
-        Func<MessageContext, CancellationToken, Task> handler
+        SubscriptionContext subscriptionContext
     )
     {
         this.connection = connection;
         this.logger = logger;
-        this.config = config;
-        this.handler = handler;
+        subConfig = subscriptionContext.SubscriptionConfig;
+        endpointConfig = subscriptionContext.SubscriptionConfig.EndpointConfig;
+        consumerConfig = subscriptionContext.ConsumerConfig!;
+        handler = subscriptionContext.Handler;
 
-        var subjectTypeMapper = DefaultSubjectTypeMapper.From(config);
+        var subjectTypeMapper = DefaultSubjectTypeMapper.From(subConfig);
         endpointSubject = subjectTypeMapper.Subject;
         subjectTypeMapping = subjectTypeMapper.SubjectTypeMapping;
     }
 
     public async Task Subscribe(CancellationToken cancellationToken)
     {
+        // TODO: this assumes that the stream is already created
+        //            stream creation will be handled later by something else
         try
         {
             var js = new NatsJSContext((NatsConnection)connection);
-        
-            var streamNameClean = endpointSubject.CleanStreamName();
-        
-            //// Creating resources isn't supported yet
-            // logger.LogWarning("Create Missing Resources? {CreateMissingResources}", config.CreateMissingResources);
-            // if (config.CreateMissingResources)
-            // {
-            //     logger.LogTrace("Creating stream {StreamName} for {Subjects}", streamNameClean,
-            //         endpointSubject);
-            //     await js.CreateStreamAsync(
-            //         new StreamConfig(streamNameClean, new[] { endpointSubject }),
-            //         cancellationToken);
-            // }
-        
-            logger.LogTrace("Creating consumer {ConsumerName} for stream {StreamName}", config.ConsumerConfig.Name,
-                streamNameClean);
-        
-            var consumerConfig = new ConsumerConfig(config.ConsumerConfig.Name);
-            
-            // TODO: build config based on aether consumer config
+
+            var streamNameClean = CleanStreamName(endpointSubject);
+            var ackStrategy = endpointConfig.AckStrategy;
+
+            logger.LogTrace("Creating consumer {ConsumerName} for stream {StreamName}", consumerConfig.Name, streamNameClean);
             var consumer = await js.CreateOrUpdateConsumerAsync(streamNameClean, consumerConfig, cancellationToken);
-        
+
             logger.LogInformation("Subscribing to {Subject}", endpointSubject);
             await foreach (var msg in consumer.ConsumeAsync<byte[]>(cancellationToken: cancellationToken))
             {
-                var handlerOnly = config.EndpointType == null;
                 try
                 {
                     var subjectMapping = "";
                     if (msg.Headers != null && msg.Headers.TryGetValue(MessageHeader.SubjectMapping, out var aetherType))
                         subjectMapping = aetherType.First() ?? "";
-        
-                    if (handlerOnly || subjectTypeMapping.ContainsKey(subjectMapping))
+
+                    if (subConfig.HandlerOnly || subjectTypeMapping.ContainsKey(subjectMapping))
                     {
-                        if (config.ConsumerConfig.AckStrategy == AckStrategy.AutoAck)
+                        if (ackStrategy == AckStrategy.AutoAck)
                             await msg.AckAsync(cancellationToken: cancellationToken);
-        
+
                         await ProcessMessage(msg);
-        
-                        if (config.ConsumerConfig.AckStrategy == AckStrategy.Default)
+
+                        if (ackStrategy == AckStrategy.Default)
                             await msg.AckAsync(cancellationToken: cancellationToken);
                     }
                     else
@@ -87,12 +75,12 @@ internal class NatsJetStreamSubscription : ISubscription
                         logger.LogWarning(
                             "No handler found for {Subject} in endpoint ({Endpoint})",
                             subjectMapping,
-                            config.EndpointName);
-        
+                            endpointConfig.EndpointName);
+
                         await msg.AckTerminateAsync(cancellationToken: cancellationToken);
                     }
                 }
-        
+
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Error processing message from {Subject}", msg.Subject);
@@ -107,7 +95,7 @@ internal class NatsJetStreamSubscription : ISubscription
         {
             logger.LogError(ex, "Error subscribing to {EndpointSubject}", endpointSubject);
         }
-        
+
         return;
 
         Task ProcessMessage(NatsJSMsg<byte[]> natsMsg)
@@ -126,9 +114,8 @@ internal class NatsJetStreamSubscription : ISubscription
             message.MessageType = messageType ?? typeof(byte[]);
 
             var replyFunc = natsMsg.ReplyTo != null
-                ? new Func<byte[], CancellationToken, Task>(
-                    (response, innerCancel) =>
-                        connection.PublishAsync(natsMsg.ReplyTo, response, cancellationToken: innerCancel).AsTask()
+                ? new Func<byte[], CancellationToken, Task>((response, innerCancel) =>
+                    connection.PublishAsync(natsMsg.ReplyTo, response, cancellationToken: innerCancel).AsTask()
                 )
                 : null;
 
@@ -137,4 +124,12 @@ internal class NatsJetStreamSubscription : ISubscription
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    
+    private static string CleanStreamName(string streamName)
+    {
+        return streamName.Replace(".", "_")
+            .Replace("*", "")
+            .Replace(">", "")
+            .TrimEnd('_');
+    }
 }

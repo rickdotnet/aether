@@ -4,20 +4,16 @@ namespace Aether.Abstractions.Messaging.Configuration;
 
 public record SubscriptionConfig
 {
-    public required ConsumerConfig ConsumerConfig { get; set; }
-    public string? Namespace { get; set; }
-    public string? EndpointName { get; init; }
-    public string? Subject { get; set; }
-    public Type? EndpointType { get; set; }
+    public required EndpointConfig EndpointConfig { get; init; }
     public required Type[] MessageTypes { get; init; } = [];
+    public Type? EndpointType { get; set; }
+
+    public bool HandlerOnly => EndpointType == null;
 
     public static SubscriptionConfig ForEndpoint(EndpointConfig endpointConfig, Type? endpointType = null, Type[]? messageTypes = null)
         => new()
         {
-            ConsumerConfig = endpointConfig.ConsumerConfig,
-            Namespace = endpointConfig.Namespace,
-            EndpointName = endpointConfig.EndpointName,
-            Subject = endpointConfig.Subject,
+            EndpointConfig = endpointConfig,
             EndpointType = endpointType,
             MessageTypes = messageTypes ?? endpointType?.GetHandlerTypes() ?? [],
         };

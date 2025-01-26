@@ -2,8 +2,8 @@ using Aether;
 using Aether.Providers.NATS.Messaging;
 using ConsoleDemo.Endpoints;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using NATS.Client.Core;
+using NATS.Client.JetStream.Models;
 using Serilog;
 
 namespace ConsoleDemo.Demos;
@@ -30,7 +30,11 @@ public class Nats
         var publisher = new NatsPublisher(natsConnection);
         var client = AetherClient.CreateClient(subscriptionProvider, publisher);
 
-        var staticEndpoint = client.Messaging.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle);
+        var natsConsumerConfig = new ConsumerConfig("static-consumer");
+        var staticConfig = StaticEndpoint.EndpointConfig with { };
+        staticConfig.SetConsumerConfig(natsConsumerConfig); // expects a stream named: static_endpoint         
+        
+        var staticEndpoint = client.Messaging.AddHandler(staticConfig, StaticEndpoint.Handle);
         await staticEndpoint.StartEndpoint(CancellationToken.None);
 
         var instance = new InstanceEndpoint();

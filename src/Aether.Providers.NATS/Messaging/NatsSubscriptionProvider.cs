@@ -18,32 +18,18 @@ public class NatsSubscriptionProvider : ISubscriptionProvider
         this.loggerFactory = loggerFactory;
     }
 
-    public ISubscription AddSubscription(SubscriptionConfig config,
+    public ISubscription AddSubscription(SubscriptionConfig subConfig,
         Func<MessageContext, CancellationToken, Task> handler)
     {
-        
-        // return new NatsCoreSubscription(
-        //     connection,
-        //     loggerFactory.CreateLogger<NatsCoreSubscription>(),
-        //     config,
-        //     handler);
-        
-        
-        if (config.ConsumerConfig.DurableType == DurableType.Durable)
-        {
-           return new NatsJetStreamSubscription(
-                   connection,
-                   loggerFactory.CreateLogger<NatsJetStreamSubscription>(),
-                   config,
-                   handler);
-        }
-        else
-        {
-            return new NatsCoreSubscription(
+        var subscriptionContext = new SubscriptionContext(subConfig, handler);
+        return subscriptionContext.IsJetStream
+            ? new NatsJetStreamSubscription(
+                connection,
+                loggerFactory.CreateLogger<NatsJetStreamSubscription>(),
+                subscriptionContext)
+            : new NatsCoreSubscription(
                 connection,
                 loggerFactory.CreateLogger<NatsCoreSubscription>(),
-                config,
-                handler);
-        }
+                subscriptionContext);
     }
 }

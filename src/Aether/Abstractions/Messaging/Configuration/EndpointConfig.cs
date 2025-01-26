@@ -1,6 +1,6 @@
 ﻿namespace Aether.Abstractions.Messaging.Configuration;
 
-public record EndpointConfig
+public sealed record EndpointConfig
 {
     /// <summary>
     /// Optional namespace for isolation. Defaults to AetherConfig.DefaultNamespace
@@ -18,15 +18,14 @@ public record EndpointConfig
     public string? Subject { get; set; } // endpoint name or subject must be provided
 
     /// <summary>
-    /// Optional consumer configuration. Default is transient consumer with InstanceId as the consumer name
+    /// This will be moving out of this class, it' sneaking in here for now.
     /// </summary>
-    public ConsumerConfig ConsumerConfig { get; set; } = ConsumerConfig.Default;
+    public AckStrategy AckStrategy { get; set; } = AckStrategy.Default;
     
-
     /// <summary>
-    /// Set by AetherClient
+    /// This is a temporary solution to provider specific configuration
     /// </summary>
-    internal Type? EndpointType { get; set; } // hmmm
+    public Dictionary<string, object> ProviderConfig  { get; } = new();
 }
 
 public static class EndpointConfigExtensions
@@ -37,7 +36,7 @@ public static class EndpointConfigExtensions
         {
             Namespace = config.Namespace,
             EndpointName = config.EndpointName,
-            Subject = config.Subject
+            Subject = config.Subject,
         };
     }
 }

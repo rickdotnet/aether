@@ -12,20 +12,6 @@ public class AetherClient
     public IDefaultMessageHub Messaging { get; }
     public IDefaultStorageProvider Storage { get; }
 
-    public AetherClient()
-    {
-        var inMemoryProvider = new InMemoryMessageHubProvider();
-        var storageProvider = new InMemoryStorageProvider();
-
-        var syncHub = new SynchronousHub(
-            subProvider: inMemoryProvider,
-            publisherProvider: inMemoryProvider
-        );
-
-        Messaging = new DefaultMessageHub(syncHub);
-        Storage = new DefaultStorageProvider(storageProvider);
-    }
-
     public AetherClient(IDefaultMessageHub messaging, IDefaultStorageProvider storage)
     {
         Messaging = messaging;

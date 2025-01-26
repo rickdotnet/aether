@@ -5,7 +5,7 @@ namespace ConsoleDemo.Endpoints;
 
 public class StaticEndpoint
 {
-    public static readonly EndpointConfig EndpointConfig = new()
+    public static EndpointConfig EndpointConfig => new()
     {
         EndpointName = "Static Endpoint",
         Subject = "static.endpoint",

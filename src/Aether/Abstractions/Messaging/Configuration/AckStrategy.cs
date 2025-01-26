@@ -1,4 +1,4 @@
-namespace Aether.Abstractions.Messaging;
+namespace Aether.Abstractions.Messaging.Configuration;
 
 public enum AckStrategy
 {

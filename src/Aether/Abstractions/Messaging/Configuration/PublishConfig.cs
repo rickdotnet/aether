@@ -1,6 +1,6 @@
 namespace Aether.Abstractions.Messaging.Configuration;
 
-public record PublishConfig
+public sealed record PublishConfig
 {
     public string? Namespace { get; set; } // namespace will prefix endpoint name
     public string? EndpointName { get; init; } // endpoint name or subject must be provided
