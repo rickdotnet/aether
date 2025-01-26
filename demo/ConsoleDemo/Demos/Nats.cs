@@ -6,55 +6,82 @@ using NATS.Client.Core;
 using NATS.Client.JetStream.Models;
 using Serilog;
 
-namespace ConsoleDemo.Demos;
-
-public class Nats
+namespace ConsoleDemo.Demos
 {
-    public static async Task Run()
+    public class Nats
     {
-        var somethingHappened = new SomethingHappenedCommand("Oh you didn't KNOW??? Your ASS better call somebody!");
-        
-        
-        var logger = new LoggerConfiguration()
-            .WriteTo.Console()
-            .CreateLogger();
-
-        var loggerFactory = LoggerFactory.Create(builder =>
+        public static async Task Run()
         {
-            builder.AddSerilog(logger);
-        });
-        
-        var natsOpts = NatsOpts.Default with { Url = "nats://127.0.0.1:4222" };
-        var natsConnection = new NatsConnection(natsOpts);
-        var subscriptionProvider = new NatsSubscriptionProvider(natsConnection, loggerFactory);
-        var publisher = new NatsPublisher(natsConnection);
-        var client = AetherClient.CreateClient(subscriptionProvider, publisher);
+            // client
+            var (client, loggerFactory) = Initialize();
 
-        var natsConsumerConfig = new ConsumerConfig("static-consumer");
-        var staticConfig = StaticEndpoint.EndpointConfig with { };
-        staticConfig.SetConsumerConfig(natsConsumerConfig); // expects a stream named: static_endpoint         
-        
-        var staticEndpoint = client.Messaging.AddHandler(staticConfig, StaticEndpoint.Handle);
-        await staticEndpoint.StartEndpoint(CancellationToken.None);
+            // demo command - DX style
+            var somethingHappened = new SomethingHappenedCommand("Oh you didn't KNOW??? Your ASS better call somebody!");
 
-        var instance = new InstanceEndpoint();
-        var instanceEndpoint = client.Messaging.AddEndpoint(InstanceEndpoint.EndpointConfig, instance);
-        await instanceEndpoint.StartEndpoint(CancellationToken.None);
+            // endpoints
+            await StaticSetup(client, loggerFactory);
+            await InstanceSetup(client);
 
-        // send a message - in process or out of process  
-        var staticPublisher = client.Messaging.CreatePublisher(StaticEndpoint.EndpointConfig);
-        var instancePublisher = client.Messaging.CreatePublisher(InstanceEndpoint.EndpointConfig);
+            // publish demo
+            await PublishMessages(client, somethingHappened);
 
-        await staticPublisher.Send(somethingHappened);
-        await instancePublisher.Send(somethingHappened);
+            // stare at the audience
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
+        }
 
-        await Task.Delay(1000);
+        private static (AetherClient, ILoggerFactory) Initialize(string natsUrl = "nats://localhost:4222")
+        {
+            // logger
+            var logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateLogger();
 
-        await staticPublisher.Send(somethingHappened);
-        await instancePublisher.Send(somethingHappened);
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddSerilog(logger);
+            });
 
-        await Task.Delay(1000);
-        Console.WriteLine("Press any key to exit...");
-        Console.ReadKey();
+            // nats
+            var natsOpts = NatsOpts.Default with { Url = natsUrl };
+            var natsConnection = new NatsConnection(natsOpts);
+            var subscriptionProvider = new NatsSubscriptionProvider(natsConnection, loggerFactory);
+            var publisher = new NatsPublisher(natsConnection);
+
+            var client = AetherClient.CreateClient(subscriptionProvider, publisher);
+
+            return (client, loggerFactory);
+        }
+
+        private static async Task StaticSetup(AetherClient client, ILoggerFactory loggerFactory)
+        {
+            var staticConfig = StaticEndpoint.EndpointConfig with { };
+            var consumerConfig = new ConsumerConfig("static-consumer"); // Expects a stream named: static_endpoint
+            staticConfig.SetConsumerConfig(consumerConfig);
+
+            var staticEndpoint = client.Messaging.AddHandler(staticConfig, StaticEndpoint.Handle);
+
+            await staticEndpoint.StartEndpoint(CancellationToken.None);
+        }
+
+        private static async Task InstanceSetup(AetherClient client)
+        {
+            var instance = new InstanceEndpoint();
+            var instanceEndpoint = client.Messaging.AddEndpoint(InstanceEndpoint.EndpointConfig, instance);
+            await instanceEndpoint.StartEndpoint(CancellationToken.None);
+        }
+
+        private static async Task PublishMessages(AetherClient client, SomethingHappenedCommand command)
+        {
+            var staticPublisher = client.Messaging.CreatePublisher(StaticEndpoint.EndpointConfig);
+            var instancePublisher = client.Messaging.CreatePublisher(InstanceEndpoint.EndpointConfig);
+
+            // Fire and forget for good measure.
+            await staticPublisher.Send(command);
+            await instancePublisher.Send(command);
+            await Task.Delay(1000);
+            await staticPublisher.Send(command);
+            await instancePublisher.Send(command);
+        }
     }
 }
