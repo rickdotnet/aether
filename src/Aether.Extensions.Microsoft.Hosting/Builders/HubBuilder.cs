@@ -11,6 +11,7 @@ internal class HubBuilder : IHubBuilder
 {
     private readonly AetherBuilder aetherBuilder;
     private readonly HubRegistration hubRegistration;
+    bool registerServicesCalled = false; // cheap way to default to UseMemory if no providers are set
 
     public HubBuilder(AetherBuilder aetherBuilder, string hubName)
     {
@@ -20,6 +21,9 @@ internal class HubBuilder : IHubBuilder
 
     internal void Build()
     {
+        if (!registerServicesCalled)
+            this.UseMemory();
+        
         var valid = hubRegistration.Validate();
         valid.OnError(error => throw new InvalidOperationException(error));
 
@@ -48,8 +52,11 @@ internal class HubBuilder : IHubBuilder
         where TSubscriptionProvider : class, ISubscriptionProvider
         where TPublisherProvider : class, IPublisherProvider
     {
+        // if this is called, we don't want to default to UseMemory
+        registerServicesCalled = true;
+        
         hubRegistration.SetProviders<TSubscriptionProvider, TPublisherProvider>();
         aetherBuilder.RegisterServices(configureServices);
+        
     }
-
 }

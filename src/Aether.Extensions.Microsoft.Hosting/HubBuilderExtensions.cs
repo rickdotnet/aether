@@ -1,4 +1,6 @@
 using Aether.Abstractions.Hosting;
+using Aether.Abstractions.Messaging;
+using Aether.Messaging;
 using Aether.Providers.Memory;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,5 +17,12 @@ public static class HubBuilderExtensions
         );
 
         return hubBuilder;
+    }
+
+    public static IAetherEndpoint CreateEndpoint(this SynchronousHub hub, EndpointRegistration registration)
+    {
+        return registration.IsHandler
+            ? hub.AddHandler(registration.Config, registration.Handler!)
+            : hub.AddEndpoint(registration.Config, registration.EndpointType!);
     }
 }

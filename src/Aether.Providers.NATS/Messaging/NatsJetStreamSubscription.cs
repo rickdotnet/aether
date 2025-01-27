@@ -51,7 +51,7 @@ internal class NatsJetStreamSubscription : ISubscription
             logger.LogTrace("Creating consumer {ConsumerName} for stream {StreamName}", consumerConfig.Name, streamNameClean);
             var consumer = await js.CreateOrUpdateConsumerAsync(streamNameClean, consumerConfig, cancellationToken);
 
-            logger.LogInformation("Subscribing to {Subject}", endpointSubject);
+            logger.LogInformation("Subscribing to stream {Stream}", streamNameClean);
             await foreach (var msg in consumer.ConsumeAsync<byte[]>(cancellationToken: cancellationToken))
             {
                 try

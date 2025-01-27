@@ -4,6 +4,7 @@ using Aether.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using RickDotNet.Extensions.Base;
 
 namespace Aether.Extensions.Microsoft.Hosting;
 
@@ -24,7 +25,7 @@ internal sealed class HubBackgroundService : BackgroundService, IAsyncDisposable
         this.serviceProvider = serviceProvider;
         this.aether = aether;
         this.logger = logger;
-        
+
         hubRegistrations = serviceProvider.GetRequiredService<IEnumerable<HubRegistration>>();
     }
 
@@ -34,36 +35,55 @@ internal sealed class HubBackgroundService : BackgroundService, IAsyncDisposable
 
         try
         {
+            // endpoints are provided by the application service provider
+            var endpointProvider = new HostedEndpointProvider(serviceProvider);
+
+            // during startup, we will register all hubs and endpoints
             foreach (var hubRegistration in hubRegistrations)
             {
+                // hub registrations track their own provider types
+                // we'll likely open it up to provider instances in the future
                 var subProvider = (ISubscriptionProvider)serviceProvider.GetRequiredService(hubRegistration.SubscriptionProviderType!);
                 var pubProvider = (IPublisherProvider)serviceProvider.GetRequiredService(hubRegistration.PublisherProviderType!);
 
-                var hub = new SynchronousHub(subProvider, pubProvider);
+                // this is the current bottleneck of the system
+                // this SynchronousHub is from a previous iteration of the library
+                // and will be replaced with a more flexible implementation
+                var hub = new SynchronousHub(subProvider, pubProvider, endpointProvider);
+
+                // assign the hub to the aether client
                 aether.Messaging.SetHub(hubRegistration.HubName, hub);
 
-                foreach (var registration in hubRegistration.Registrations)
+                // register all endpoints for the hub
+                foreach (var endpointRegistration in hubRegistration.EndpointRegistrations)
                 {
-                    if (registration.EndpointType is null && registration.Handler is null)
-                    {
-                        logger.LogWarning("{EndpointName} - EndpointType and Handler are both null. Skipping registration.", registration.Config.EndpointName);
-                        continue;
-                    }
+                    var endpointName = endpointRegistration.Config.EndpointName;
+                    
+                    // an endpoint must have a type or a handler
+                    var validRegistration = endpointRegistration.Validate();
+                    await validRegistration.ResolveAsync(
+                        onError: error =>
+                        {
+                            logger.LogWarning("{EndpointName} - Skipping registration.", endpointName);
+                            logger.LogDebug("{EndpointName} - {Error}", endpointName, error);
+                            
+                            return Task.CompletedTask;
+                        },
+                        onSuccess: async _ =>
+                        {
+                            logger.LogInformation("Creating Endpoint - {EndpointName}.", endpointName);
+                            var endpoint = hub.CreateEndpoint(endpointRegistration);
+                            endpoints.Add(endpoint);
 
-                    logger.LogInformation("Starting Endpoint - {EndpointName}.", registration.Config.EndpointName);
+                            logger.LogInformation("Starting Endpoint - {EndpointName}.", endpointName);
+                            await endpoint.StartEndpoint(stoppingToken);
+                            logger.LogDebug("Endpoint ({EndpointName}) started successfully.", endpointName);
+                        });
+                } // foreach endpointRegistration
+            } // foreach hubRegistration
 
-                    var endpoint = registration.IsHandler
-                        ? hub.AddHandler(registration.Config, registration.Handler!)
-                        : hub.AddEndpoint(registration.EndpointType!, registration.Config);
-
-                    endpoints.Add(endpoint);
-
-                    await endpoint.StartEndpoint(stoppingToken);
-                    logger.LogDebug("Endpoint ({EndpointName}) started successfully.", registration.Config.EndpointName);
-                }
-
-                await Task.Delay(-1, stoppingToken);
-            }
+            logger.LogInformation("HubBackgroundService has started.");
+            await Task.Delay(-1, stoppingToken);
         }
         catch (TaskCanceledException)
         {
@@ -74,7 +94,7 @@ internal sealed class HubBackgroundService : BackgroundService, IAsyncDisposable
             logger.LogError(ex, "An error occurred during ExecuteAsync.");
         }
 
-        logger.LogInformation("HubBackgroundService has finished execution.");
+        logger.LogWarning("HubBackgroundService has finished execution.");
     }
 
     public async ValueTask DisposeAsync()

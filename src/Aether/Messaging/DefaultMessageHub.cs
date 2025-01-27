@@ -60,8 +60,8 @@ internal class DefaultMessageHub : IDefaultMessageHub
         => DefaultHub.AddEndpoint(endpointConfig, instance);
 
     /// <inheritdoc />
-    public IAetherEndpoint AddEndpoint(Type endpointType, EndpointConfig endpointConfig)
-        => DefaultHub.AddEndpoint(endpointType, endpointConfig);
+    public IAetherEndpoint AddEndpoint(EndpointConfig endpointConfig, Type endpointType)
+        => DefaultHub.AddEndpoint(endpointConfig, endpointType);
 
     /// <inheritdoc />
     public IAetherEndpoint AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler)

@@ -14,7 +14,7 @@ public interface IMessageHub
     /// <summary>
     /// Adds a new endpoint for the specified endpoint type using the given configuration.
     /// </summary>
-    public IAetherEndpoint AddEndpoint(Type endpointType, EndpointConfig endpointConfig);
+    public IAetherEndpoint AddEndpoint(EndpointConfig endpointConfig, Type endpointType);
 
     /// <summary>
     /// Adds a new endpoint for the specified type using the given configuration and instance.

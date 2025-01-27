@@ -1,5 +1,6 @@
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Messaging;
+using RickDotNet.Base;
 
 namespace Aether.Extensions.Microsoft.Hosting;
 
@@ -21,6 +22,13 @@ public sealed class EndpointRegistration
     {
         Config = config;
         Handler = handler;
+    }
+    
+    public Result<bool> Validate()
+    {
+        return EndpointType != null || Handler != null
+            ? true
+            : Result.Failure<bool>("Missing endpoint type or handler");
     }
 
     public static EndpointRegistration From<T>(EndpointConfig config)

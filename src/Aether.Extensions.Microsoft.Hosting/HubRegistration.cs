@@ -7,8 +7,8 @@ namespace Aether.Extensions.Microsoft.Hosting;
 
 public sealed class HubRegistration
 {
-    private readonly List<EndpointRegistration> registrations = new();
-    public IReadOnlyList<EndpointRegistration> Registrations => registrations;
+    private readonly List<EndpointRegistration> endpointRegistrations = new();
+    public IReadOnlyList<EndpointRegistration> EndpointRegistrations => endpointRegistrations;
     public string HubName { get; }
     public Type? SubscriptionProviderType { get; private set; }
 
@@ -27,13 +27,13 @@ public sealed class HubRegistration
     }
 
     public void AddRegistration<T>(EndpointConfig config)
-        => registrations.Add(EndpointRegistration.From<T>(config));
+        => endpointRegistrations.Add(EndpointRegistration.From<T>(config));
 
     public void AddRegistration(Type endpointType, EndpointConfig endpointConfig)
-        => registrations.Add(EndpointRegistration.From(endpointConfig, endpointType));
+        => endpointRegistrations.Add(EndpointRegistration.From(endpointConfig, endpointType));
 
     public void AddRegistration(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler)
-        => registrations.Add(EndpointRegistration.From(endpointConfig, handler));
+        => endpointRegistrations.Add(EndpointRegistration.From(endpointConfig, handler));
 
     public void SetProviders<TSubscriptionProvider, TPublisherProvider>()
         where TSubscriptionProvider : ISubscriptionProvider
