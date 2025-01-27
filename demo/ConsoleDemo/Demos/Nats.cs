@@ -55,9 +55,8 @@ namespace ConsoleDemo.Demos
 
         private static async Task StaticSetup(AetherClient client, ILoggerFactory loggerFactory)
         {
-            var staticConfig = StaticEndpoint.EndpointConfig with { };
             var consumerConfig = new ConsumerConfig("static-consumer"); // Expects a stream named: static_endpoint
-            staticConfig.SetConsumerConfig(consumerConfig);
+            var staticConfig = StaticEndpoint.EndpointConfig.WithConsumer(consumerConfig);
 
             var staticEndpoint = client.Messaging.AddHandler(staticConfig, StaticEndpoint.Handle);
 

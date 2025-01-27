@@ -8,9 +8,8 @@ namespace Aether.Messaging;
 internal class DefaultMessageHub : IDefaultMessageHub
 {
     // TODO: will revisit this, for now, just getting the default hub working
-    private const string DefaultHubKey = "default"; // TODO: this value is mentioned in comments below;
     private readonly Dictionary<string, IMessageHub> hubs;
-    private IMessageHub DefaultHub => hubs[DefaultHubKey];
+    private IMessageHub DefaultHub => hubs[IDefaultMessageHub.DefaultHubKey];
 
     /// <summary>
     /// Create a new DefaultMessagingHub with the given default hub.
@@ -19,21 +18,17 @@ internal class DefaultMessageHub : IDefaultMessageHub
     {
         hubs = new Dictionary<string, IMessageHub>
         {
-            [DefaultHubKey] = defaultHub
+            [IDefaultMessageHub.DefaultHubKey] = defaultHub,
         };
     }
-    /// <summary>
-    /// Create a new DefaultMessagingHub with the given hubs. 
-    /// The default hub should be keyed "default" (defined by <see cref="DefaultHubKey"/>); 
-    /// otherwise, the first hub will be used as the default.
-    /// </summary>
+
     public DefaultMessageHub(Dictionary<string, IMessageHub> hubs)
     {
         // copy the dictionary
         this.hubs = hubs.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        if (!this.hubs.ContainsKey(DefaultHubKey))
+        if (!this.hubs.ContainsKey(IDefaultMessageHub.DefaultHubKey))
         {
-            this.hubs[DefaultHubKey] = this.hubs.First().Value;
+            this.hubs[IDefaultMessageHub.DefaultHubKey] = this.hubs.First().Value;
         }
     }
 
@@ -45,17 +40,16 @@ internal class DefaultMessageHub : IDefaultMessageHub
     }
 
     /// <inheritdoc />
-    public Result<IMessageHub> GetHub<T>() where T : IMessageHub
+    public Result<VoidResult> SetHub(string hubKey, IMessageHub hub)
     {
-        var type = typeof(T);
-        var key = type.FullName ?? type.Name;
-        
-        // this will be result or failure
-        return GetHub(key);
+        return Result.Try(() =>
+        {
+            hubs[hubKey] = hub;    
+        });
     }
 
     /// <inheritdoc />
-    public IMessageHub AsHub() => hubs[DefaultHubKey];
+    public IMessageHub AsHub() => hubs[IDefaultMessageHub.DefaultHubKey];
 
     /// <inheritdoc />
     public IAetherEndpoint AddEndpoint<T>(EndpointConfig endpointConfig)

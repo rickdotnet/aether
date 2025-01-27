@@ -4,6 +4,7 @@ namespace Aether.Abstractions.Providers;
 
 public interface IDefaultMessageHub : IMessageHub
 {
+    public const string DefaultHubKey = "default"; // TODO: this value is mentioned in comments below;
     /// <summary>
     /// Retrieves the messaging Hub associated with the specified Hub key.
     /// </summary>
@@ -11,11 +12,9 @@ public interface IDefaultMessageHub : IMessageHub
     Result<IMessageHub> GetHub(string hubKey);
     
     /// <summary>
-    /// Retrieves the messaging Hub using the specified type.FullName or type.Name as the Hub key.
+    /// Sets the provided message hub at the specified key
     /// </summary>
-    /// /// <returns> The messaging Hub associated with the specified type. Returns a failure if the Hub is not found.</returns>
-    Result<IMessageHub> GetHub<T>() where T : IMessageHub;
-
+    Result<VoidResult> SetHub(string hubKey, IMessageHub hub);
 
     /// <summary>
     /// Returns the default messaging Hub.

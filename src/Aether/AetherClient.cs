@@ -6,7 +6,13 @@ using Aether.Storage;
 
 namespace Aether;
 
-public class AetherClient
+public interface IAetherClient
+{
+    IDefaultMessageHub Messaging { get; }
+    IDefaultStorageProvider Storage { get; }
+}
+
+public class AetherClient : IAetherClient
 {
     public static readonly AetherClient MemoryClient = CreateMemoryClient();
     public IDefaultMessageHub Messaging { get; }

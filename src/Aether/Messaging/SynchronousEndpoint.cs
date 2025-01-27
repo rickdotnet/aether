@@ -26,21 +26,17 @@ internal class SynchronousEndpoint : IAetherEndpoint
 {
     private readonly EndpointConfig endpointConfig;
     private readonly ISubscriptionProvider subscriptionProvider;
-    private readonly IEndpointProvider? endpointProvider;
     private readonly Type? endpointType;
     private readonly object? endpointInstance;
     private readonly Func<MessageContext, CancellationToken, Task>? handler;
     private readonly bool handlerOnly = true;
     private Task? endpointTask;
-    //private CancellationToken? endpointCancellationToken;
-
-    // subject -> `Handle(message)` cache
     private readonly Dictionary<Type, MethodInfo> handlers = new();
 
     public SynchronousEndpoint(EndpointContext endpointContext)
     {
         subscriptionProvider = endpointContext.SubscriptionProvider; // endpointConfig.SubscriptionProvider ?? throw new ArgumentException("Subscription provider is required");
-        endpointProvider = endpointContext.EndpointProvider;
+        var endpointProvider = endpointContext.EndpointProvider;
 
         endpointConfig = endpointContext.EndpointConfig;
         handler = endpointContext.Handler;
