@@ -3,7 +3,7 @@ using Aether.Abstractions.Providers;
 using Aether.Messaging;
 using RickDotNet.Base;
 
-namespace Aether.Extensions.Microsoft.Hosting;
+namespace Aether.Extensions.Microsoft.Hosting.MessageHub;
 
 public sealed class HubRegistration
 {

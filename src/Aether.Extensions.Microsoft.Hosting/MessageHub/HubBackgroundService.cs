@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RickDotNet.Extensions.Base;
 
-namespace Aether.Extensions.Microsoft.Hosting;
+namespace Aether.Extensions.Microsoft.Hosting.MessageHub;
 
 internal sealed class HubBackgroundService : BackgroundService, IAsyncDisposable
 {

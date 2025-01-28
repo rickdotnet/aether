@@ -2,7 +2,7 @@
 using Aether.Abstractions.Storage;
 using Aether.Messaging;
 using Aether.Providers.Memory;
-using Aether.Storage;
+using Aether.Providers.Storage;
 
 namespace Aether;
 
@@ -26,7 +26,7 @@ public class AetherClient : IAetherClient
 
     private static AetherClient CreateMemoryClient()
     {
-        var inMemoryProvider = new InMemoryMessageHubProvider();
+        var inMemoryProvider = new InMemoryHubProvider();
         var storageProvider = new InMemoryStorageProvider();
 
         var syncHub = new SynchronousHub(

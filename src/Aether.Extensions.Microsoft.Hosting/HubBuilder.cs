@@ -1,11 +1,14 @@
 using Aether.Abstractions.Hosting;
+using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
+using Aether.Extensions.Microsoft.Hosting.MessageHub;
 using Aether.Messaging;
+using Aether.Providers.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using RickDotNet.Extensions.Base;
 
-namespace Aether.Extensions.Microsoft.Hosting.Builders;
+namespace Aether.Extensions.Microsoft.Hosting;
 
 internal class HubBuilder : IHubBuilder
 {
@@ -58,5 +61,25 @@ internal class HubBuilder : IHubBuilder
         hubRegistration.SetProviders<TSubscriptionProvider, TPublisherProvider>();
         aetherBuilder.RegisterServices(configureServices);
         
+    }
+}
+public static class HubBuilderExtensions
+{
+    public static IHubBuilder UseMemory(this IHubBuilder hubBuilder)
+    {
+        hubBuilder.RegisterServices<InMemoryHubProvider, InMemoryHubProvider>(
+            services =>
+                services
+                    .AddSingleton<InMemoryHubProvider>()
+        );
+
+        return hubBuilder;
+    }
+
+    public static IAetherEndpoint CreateEndpoint(this SynchronousHub hub, EndpointRegistration registration)
+    {
+        return registration.IsHandler
+            ? hub.AddHandler(registration.Config, registration.Handler!)
+            : hub.AddEndpoint(registration.Config, registration.EndpointType!);
     }
 }

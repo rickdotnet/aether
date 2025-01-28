@@ -1,7 +1,8 @@
 using Aether.Abstractions.Hosting;
+using Aether.Extensions.Microsoft.Hosting.MessageHub;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Aether.Extensions.Microsoft.Hosting.Builders;
+namespace Aether.Extensions.Microsoft.Hosting;
 
 public class AetherBuilder : IAetherBuilder
 {

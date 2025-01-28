@@ -4,6 +4,7 @@ using Aether.Messaging;
 
 namespace Aether.Providers.Memory;
 
+// in-memory only, TODO: we might have some bacon here
 internal record SubscriptionOptions
 {
     // provide a spot for things like retry policy/dead-letter actions, etc

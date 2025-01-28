@@ -57,7 +57,7 @@ public class HostDemo
         #endregion
 
         var host = builder.Build();
-        var hostTask = host.RunAsync();
+        var hostTask = host.RunAsync(); // keep it running
 
         // give everything time to start up
         await Task.Delay(3000);
@@ -85,8 +85,6 @@ public class HostDemo
         #endregion
 
         await Task.Delay(1000);
-        Console.WriteLine("Press any key to exit");
-        Console.ReadKey();
     }
 
     private static void ExampleOne(HostApplicationBuilder builder)
@@ -101,6 +99,10 @@ public class HostDemo
 
     private static void ExampleTwo(HostApplicationBuilder builder)
     {
+        // nats client is required for nats hub
+        // we're using NATS.Extensions.Microsoft.DependencyInjection package for now
+        // will likely handle this internally in the future
+        builder.Services.AddNatsClient(nats => nats.ConfigureOptions(opts => opts with { Url = "nats://localhost:4222" }));
         builder.Services.AddAether(
             ab => ab.Messaging
                 .AddHub(
@@ -112,6 +114,7 @@ public class HostDemo
 
     private static void Example3(HostApplicationBuilder builder, EndpointConfig durableConfig)
     {
+        builder.Services.AddNatsClient(nats => nats.ConfigureOptions(opts => opts with { Url = "nats://localhost:4222" }));
         builder.Services.AddAether(
             ab => ab.Messaging
                 .AddHub(hub => hub // default is memory

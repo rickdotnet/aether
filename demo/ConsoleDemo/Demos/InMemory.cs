@@ -31,7 +31,5 @@ public class InMemory
         await instancePublisher.Send(somethingHappened);
 
         await Task.Delay(1000);
-        Console.WriteLine("Press any key to exit...");
-        Console.ReadKey();
     }
 }

@@ -6,16 +6,16 @@ using Aether.Messaging;
 
 namespace Aether.Providers.Memory;
 
-public class InMemoryMessageHubProvider : ISubscriptionProvider, IPublisherProvider
+public class InMemoryHubProvider : ISubscriptionProvider, IPublisherProvider
 {
     private readonly SubscriptionOptions? defaultSubscriptionOptions;
     private readonly ConcurrentDictionary<string, List<InMemorySubscription>> subscriptions = new();
     private readonly TimeSpan requestTimeout = TimeSpan.FromSeconds(30);
     
-    public InMemoryMessageHubProvider()
+    public InMemoryHubProvider()
     {
     }
-    internal InMemoryMessageHubProvider(SubscriptionOptions? defaultSubscriptionOptions = null)
+    internal InMemoryHubProvider(SubscriptionOptions? defaultSubscriptionOptions = null)
     {
         this.defaultSubscriptionOptions = defaultSubscriptionOptions;
     }

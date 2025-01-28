@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Aether.Storage;
+namespace Aether.Abstractions.Storage;
 
 public abstract class FilterCriteria
 {

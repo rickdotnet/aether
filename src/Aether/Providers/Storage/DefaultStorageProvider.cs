@@ -1,7 +1,7 @@
 using Aether.Abstractions.Storage;
 using RickDotNet.Base;
 
-namespace Aether.Storage;
+namespace Aether.Providers.Storage;
 
 public class DefaultStorageProvider :  IDefaultStorageProvider
 {

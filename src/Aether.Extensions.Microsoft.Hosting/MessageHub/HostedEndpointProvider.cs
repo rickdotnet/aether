@@ -1,7 +1,7 @@
 using Aether.Abstractions.Providers;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Aether.Extensions.Microsoft.Hosting;
+namespace Aether.Extensions.Microsoft.Hosting.MessageHub;
 
 internal class HostedEndpointProvider(IServiceProvider provider) : IEndpointProvider
 {
