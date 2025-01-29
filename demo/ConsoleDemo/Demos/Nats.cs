@@ -13,13 +13,13 @@ namespace ConsoleDemo.Demos
         public static async Task Run()
         {
             // client
-            var (client, loggerFactory) = Initialize();
+            var client = Initialize();
 
             // demo command - DX style
             var somethingHappened = new SomethingHappenedCommand("Oh you didn't KNOW??? Your ASS better call somebody!");
 
             // endpoints
-            await StaticSetup(client, loggerFactory);
+            await StaticSetup(client);
             await InstanceSetup(client);
 
             // publish demo
@@ -30,7 +30,7 @@ namespace ConsoleDemo.Demos
             Console.ReadKey();
         }
 
-        private static (AetherClient, ILoggerFactory) Initialize(string natsUrl = "nats://localhost:4222")
+        private static AetherClient Initialize(string natsUrl = "nats://localhost:4222")
         {
             // logger
             var logger = new LoggerConfiguration()
@@ -50,10 +50,10 @@ namespace ConsoleDemo.Demos
 
             var client = AetherClient.CreateClient(subscriptionProvider, publisher);
 
-            return (client, loggerFactory);
+            return client;
         }
 
-        private static async Task StaticSetup(AetherClient client, ILoggerFactory loggerFactory)
+        private static async Task StaticSetup(AetherClient client)
         {
             var consumerConfig = new ConsumerConfig("static-consumer"); // Expects a stream named: static_endpoint
             var staticConfig = StaticEndpoint.EndpointConfig.WithConsumer(consumerConfig);
