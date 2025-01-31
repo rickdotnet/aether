@@ -93,7 +93,8 @@ public class HostDemo
             ab => ab.Messaging
                 .AddHub(hub => hub // no name replaces default hub
                     .UseMemory() // optional, default is memory
-                    .AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle))
+                    .AddHandler(StaticEndpoint
+                        .EndpointConfig, StaticEndpoint.Handle))
         );
     }
 

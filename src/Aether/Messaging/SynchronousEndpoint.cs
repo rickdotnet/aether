@@ -2,6 +2,7 @@
 using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
+using RickDotNet.Base;
 
 namespace Aether.Messaging;
 
@@ -35,7 +36,9 @@ internal class SynchronousEndpoint : IAetherEndpoint
 
     public SynchronousEndpoint(EndpointContext endpointContext)
     {
-        subscriptionProvider = endpointContext.SubscriptionProvider; // endpointConfig.SubscriptionProvider ?? throw new ArgumentException("Subscription provider is required");
+        subscriptionProvider =
+            endpointContext
+                .SubscriptionProvider; // endpointConfig.SubscriptionProvider ?? throw new ArgumentException("Subscription provider is required");
         var endpointProvider = endpointContext.EndpointProvider;
 
         endpointConfig = endpointContext.EndpointConfig;
@@ -87,50 +90,60 @@ internal class SynchronousEndpoint : IAetherEndpoint
         return ValueTask.CompletedTask;
     }
 
-    private async Task InternalHandle(MessageContext context, CancellationToken cancellationToken)
+    private Task<Result<VoidResult>> InternalHandle(MessageContext context, CancellationToken cancellationToken)
     {
         if (handlerOnly)
         {
-            await handler!(context, cancellationToken);
-            return;
+            return Result.TryAsync(() => handler!(context, cancellationToken));
         }
 
-        if (context.Message.MessageType is null)
-            throw new InvalidOperationException("Message type not found"); // assume byte[]?
-
+        var messageType = context.Message.MessageType ?? typeof(MessageContext);
+        var fallbackToMessageContext = messageType == typeof(MessageContext);
         // get or set cache
-        var handleMethod = handlers.GetValueOrDefault(context.Message.MessageType);
+        var handleMethod = handlers.GetValueOrDefault(context.Message.MessageType!);
         if (handleMethod is null)
         {
-            handleMethod = endpointType!.GetMethod("Handle",
-                [context.Message.MessageType!, typeof(MessageContext), typeof(CancellationToken)]);
+            handleMethod = fallbackToMessageContext
+                ? endpointType!.GetMethod("Handle", [typeof(MessageContext), typeof(CancellationToken)])
+                : endpointType!.GetMethod("Handle",
+                    [context.Message.MessageType!, typeof(MessageContext), typeof(CancellationToken)]);
 
             if (handleMethod is null)
-                throw new InvalidOperationException("Handle method not found");
+                return Task.FromResult(
+                    Result.Failure<VoidResult>("No suitable handler found for message type")
+                );
 
-            handlers.TryAdd(context.Message.MessageType, handleMethod);
+            handlers.TryAdd(messageType, handleMethod);
         }
 
-        var messageObject = context.Data.As(context.Message.MessageType!);
-        // we're ok with null here, for now. need to send some tests through
+        if (fallbackToMessageContext)
+            return Result.TryAsync(() => (Task)handleMethod.Invoke(endpointInstance, [context, cancellationToken])!);
 
-        var isRequest = context.Message.MessageType.IsRequest();
-
-        if (isRequest)
+        return Result.TryAsync(async () =>
         {
-            if (!context.ReplyAvailable)
-                throw new InvalidOperationException("Uh, oh: No reply available");
+            var messageObject = context.Data.As(messageType);
+            // we're ok with null here, for now. need to send some tests through
 
-            var response =
-                await (dynamic)handleMethod.Invoke(endpointInstance, [messageObject, context, cancellationToken])!;
+            var isRequest = messageType.IsRequest();
 
-            var data = AetherData.From(response);
-            await context.Reply(data, cancellationToken);
-        }
-        else
-        {
-            var result = (Task)handleMethod.Invoke(endpointInstance, [messageObject, context, cancellationToken])!;
-            await result;
-        }
+            if (isRequest)
+            {
+                if (!context.ReplyAvailable)
+                    return Result.Failure<VoidResult>("No reply function available");
+
+                var response =
+                    await (dynamic)handleMethod.Invoke(endpointInstance, [messageObject, context, cancellationToken])!;
+
+                var data = AetherData.From(response);
+                await context.Reply(data, cancellationToken);
+            }
+            else
+            {
+                var result = (Task)handleMethod.Invoke(endpointInstance, [messageObject, context, cancellationToken])!;
+                await result;
+            }
+
+            return VoidResult.Default;
+        });
     }
 }

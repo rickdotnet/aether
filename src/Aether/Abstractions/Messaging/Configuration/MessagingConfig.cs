@@ -30,9 +30,4 @@ public record MessagingConfig
     /// Publish only mode
     /// </summary>
     public bool PublishOnly { get; set; }
-    
-    /// <summary>
-    /// PoC
-    /// </summary>
-    public AckStrategy AckStrategy { get; set; } = AckStrategy.Default;
 }

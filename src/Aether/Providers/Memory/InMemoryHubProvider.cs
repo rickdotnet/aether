@@ -3,6 +3,7 @@ using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
 using Aether.Messaging;
+using RickDotNet.Base;
 
 namespace Aether.Providers.Memory;
 
@@ -21,7 +22,7 @@ public class InMemoryHubProvider : ISubscriptionProvider, IPublisherProvider
     }
     
     public ISubscription AddSubscription(SubscriptionConfig config,
-        Func<MessageContext, CancellationToken, Task> handler)
+        Func<MessageContext, CancellationToken, Task<Result<VoidResult>>> handler)
     {
         var sub = new InMemorySubscription(handler, defaultSubscriptionOptions);
         var subjectTypeMapper = DefaultSubjectTypeMapper.From(config);

@@ -16,11 +16,6 @@ public sealed record EndpointConfig
     /// The subject to use for the endpoint. If not provided, the endpoint name will be slugified. If neither are provided, the namespace will be used.
     /// </summary>
     public string? Subject { get; set; } // endpoint name or subject must be provided
-
-    /// <summary>
-    /// This will be moving out of this class, it' sneaking in here for now.
-    /// </summary>
-    public AckStrategy AckStrategy { get; set; } = AckStrategy.Default;
     
     /// <summary>
     /// This is a temporary solution to provider specific configuration
