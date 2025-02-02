@@ -22,7 +22,7 @@ public class ChannelBackedHub : IMessageHub
         ISubscriptionProvider subProvider,
         IPublisherProvider publisherProvider,
         IEndpointProvider? endpointProvider = null,
-        int maxWorkers = 1,
+        int maxWorkers = 4,
         int bufferCapacity = 100
     )
     {
@@ -37,13 +37,13 @@ public class ChannelBackedHub : IMessageHub
         this.maxWorkers = maxWorkers;
         workerTasks = new List<Task>();
     }
-    
+
     public Task Start(CancellationToken cancellationToken)
     {
         // TODO: don't allow starting twice
-        
+
         cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        
+
         for (var i = 0; i < maxWorkers; i++)
         {
             workerTasks.Add(Task.Run(() => ProcessMessagesAsync(cts.Token), cts.Token)); // do we want the second token?
@@ -60,29 +60,32 @@ public class ChannelBackedHub : IMessageHub
 
     private async Task? ProcessMessagesAsync(CancellationToken cancellationToken)
     {
-            await foreach (var messageContext in messageChannel.Reader.ReadAllAsync(cancellationToken))
+        await foreach (var messageContext in messageChannel.Reader.ReadAllAsync(cancellationToken))
+        {
+            // get endpoint type from subject
+            var subject = messageContext.Message.Subject;
+            if (subject is null)
             {
-                // get endpoint type from subject
-                var subject = messageContext.Message.Subject;
-                if (subject is null)
-                {
-                    // log error
-                    Console.WriteLine("No subject on message");
-                    continue; // we'll signal terminate from here
-                }
-
-                var invoker = invokers.GetValueOrDefault(subject);
-                if (invoker is null)
-                {
-                    // log error
-                    Console.WriteLine($"No invoker found for {subject}");
-                    continue; // we'll signal terminate from here
-                }
-                
-                var messageType = messageContext.Message.MessageType ?? typeof(MessageContext);
-                var result = await invoker.Invoke(messageType, messageContext, cancellationToken);
-                await messageContext.Signal(AckSignal.Ack, cancellationToken);
+                // log error
+                Console.WriteLine("No subject on message");
+                continue; // we'll signal terminate from here
             }
+
+            var invoker = invokers.GetValueOrDefault(subject);
+            if (invoker is null)
+            {
+                // log error
+                Console.WriteLine($"No invoker found for {subject}");
+                continue; // we'll signal terminate from here
+            }
+
+            var messageType = messageContext.Message.MessageType ?? typeof(MessageContext);
+            var result = await invoker.Invoke(messageType, messageContext, cancellationToken);
+
+            // we're auto-acking for now
+            // if (result)
+            //await messageContext.Signal(AckSignal.Ack, cancellationToken);
+        }
     }
 
     public async Task Stop()
@@ -96,15 +99,15 @@ public class ChannelBackedHub : IMessageHub
         messageChannel.Writer.TryWrite(messageContext);
         return Task.FromResult(AckSignal.Ack); // auto-ack for now
     }
-    
+
     public Task AddEndpoint<T>(EndpointConfig endpointConfig)
         => AddEndpoint(endpointConfig, typeof(T));
 
     public Task AddEndpoint(EndpointConfig endpointConfig, Type endpointType)
     {
-        if(endpointProvider is null)
+        if (endpointProvider is null)
             throw new InvalidOperationException("No endpoint provider configured");
-        
+
         var subContext = SubscriptionContext.ForEndpoint(
             endpointConfig,
             InnerHandle,
@@ -113,7 +116,7 @@ public class ChannelBackedHub : IMessageHub
 
         var added = invokers.TryAdd(subContext.SubjectMapping.Subject, new EndpointInvoker(endpointType, endpointProvider));
         subscriptions.Add(subContext);
-        
+
         return Task.CompletedTask;
     }
 
@@ -126,17 +129,15 @@ public class ChannelBackedHub : IMessageHub
 
         var added = invokers.TryAdd(subContext.SubjectMapping.Subject, new EndpointInvoker(handler));
         subscriptions.Add(subContext);
-        
+
         return Task.CompletedTask;
     }
 
-     public IPublisher CreatePublisher(EndpointConfig endpointConfig)
-         => CreatePublisher(endpointConfig.ToPublishConfig());
+    public IPublisher CreatePublisher(EndpointConfig endpointConfig)
+        => CreatePublisher(endpointConfig.ToPublishConfig());
 
-     public IPublisher CreatePublisher(PublishConfig publishConfig)
-     {
-         return new DefaultPublisher(publishConfig, publisherProvider);
-     }
+    public IPublisher CreatePublisher(PublishConfig publishConfig) 
+        => new DefaultPublisher(publishConfig, publisherProvider);
 }
 
 public enum AckSignal
