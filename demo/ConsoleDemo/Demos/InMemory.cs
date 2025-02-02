@@ -11,7 +11,7 @@ public class InMemory
 
         var client = AetherClient.MemoryClient;
 
-        var staticEndpoint = client.Messaging.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle);
+        await client.Messaging.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle);
 
         // new
         await client.Messaging.Start(CancellationToken.None);

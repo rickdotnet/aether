@@ -44,7 +44,9 @@ public class InMemoryHubProvider : ISubscriptionProvider, IPublisherProvider
             // no handlers for this message type?
             return;
         }
-
+        
+        message.Headers[MessageHeader.Subject] = subjectKey;
+        
         var tasks = subscription.Select(
             async sub => { await sub.Writer.WriteAsync(new MessageContext(message), cancellationToken); });
 
