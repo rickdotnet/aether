@@ -1,6 +1,7 @@
 using Aether.Abstractions.Messaging;
 using Aether.Messaging;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using NATS.Client.Core;
 using RickDotNet.Base;
 using RickDotNet.Extensions.Base;
@@ -53,31 +54,38 @@ internal class NatsCoreSubscription : ISubscription
 
         Task<Result<VoidResult>> ProcessMessage(NatsMsg<byte[]> natsMsg)
         {
+            var headers = natsMsg.Headers?.ToDictionary(kp => kp.Key, kp => kp.Value) 
+                          ?? new Dictionary<string, StringValues>();
+            
+            headers[MessageHeader.Subject] = natsMsg.Subject;
+            
             var message = new AetherMessage
             {
-                Headers = natsMsg.Headers ?? new NatsHeaders(),
+                Headers = headers,
                 Data = natsMsg.Data ?? [],
             };
-            
+
             message.Headers[MessageHeader.Subject] = natsMsg.Subject;
 
             // if we have a type mapping header, use it to determine the message type
-            if (message.Headers.TryGetValue(MessageHeader.MessageTypeMapping, out var headerType) && headerType.Count > 0)
+            if (message.Headers.TryGetValue(MessageHeader.MessageTypeMapping, out var headerType) &&
+                headerType.Count > 0)
             {
                 var messageType = subjectMapping.TypeFromMapping(headerType.First()!);
                 message.MessageType = messageType;
             }
 
-            var replyFunc = natsMsg.ReplyTo != null
+            var replySubject = natsMsg.ReplyTo;
+            var replyFunc = replySubject != null
                 ? new Func<byte[], CancellationToken, Task>(
                     (response, innerCancel) =>
-                        connection.PublishAsync(natsMsg.ReplyTo, response, cancellationToken: innerCancel).AsTask()
+                        connection.PublishAsync(replySubject, response, cancellationToken: innerCancel).AsTask()
                 )
                 : null;
 
             return Result.TryAsync(() => handler(new MessageContext(message, replyFunc), cancellationToken));
         }
     }
-
+    
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

@@ -1,6 +1,7 @@
 using Aether.Abstractions.Messaging;
 using Aether.Messaging;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using NATS.Client.Core;
 using NATS.Client.JetStream;
 using RickDotNet.Base;
@@ -65,14 +66,20 @@ internal class NatsJetStreamSubscription : ISubscription
 
         async Task<Result<AckSignal>> ProcessMessage(NatsJSMsg<byte[]> natsMsg)
         {
+            var headers = natsMsg.Headers?.ToDictionary(kp => kp.Key, kp => kp.Value) 
+                          ?? new Dictionary<string, StringValues>();
+            
+            headers[MessageHeader.Subject] = natsMsg.Subject;
+            
             var message = new AetherMessage
             {
-                Headers = natsMsg.Headers ?? new NatsHeaders(),
+                Headers = headers,
                 Data = natsMsg.Data ?? [],
             };
-            message.Headers[MessageHeader.Subject] = natsMsg.Subject;
+
             // if we have a subject mapping header, use it to determine the message type
-            if (message.Headers.TryGetValue(MessageHeader.MessageTypeMapping, out var headerType) && headerType.Count > 0)
+            if (message.Headers.TryGetValue(MessageHeader.MessageTypeMapping, out var headerType) &&
+                headerType.Count > 0)
             {
                 var messageType = subjectMapping.TypeFromMapping(headerType.First()!);
                 message.MessageType = messageType;

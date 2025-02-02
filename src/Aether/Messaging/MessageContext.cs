@@ -27,14 +27,14 @@ public class MessageContext
     public Task<Result<VoidResult>> Reply(byte[] response, CancellationToken cancellationToken)
         => Task.FromResult(
             ReplyAvailable
-                ? Result.Failure<VoidResult>("No reply function available")
-                : Result.Try(() => { ReplyFunc!(response, cancellationToken); })
+                ? Result.Try(() => { ReplyFunc!(response, cancellationToken); })
+                : Result.Failure<VoidResult>("No reply function available")
         );
 
     public Task<Result<VoidResult>> Signal(AckSignal signal, CancellationToken cancellationToken)
         => Task.FromResult(
             SignalAvailable
-                ? Result.Failure<VoidResult>("No ack function available")
-                : Result.Try(() => { SignalFunc!(signal, cancellationToken); })
+                ? Result.Try(() => { SignalFunc!(signal, cancellationToken); })
+                : Result.Failure<VoidResult>("No ack function available")
         );
 }
