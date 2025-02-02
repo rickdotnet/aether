@@ -20,7 +20,7 @@ namespace ConsoleDemo.Demos
 
             // endpoints
             await StaticSetup(client);
-            await InstanceSetup(client);
+            await client.Messaging.Start(CancellationToken.None);
 
             // publish demo
             await PublishMessages(client, somethingHappened);
@@ -53,21 +53,12 @@ namespace ConsoleDemo.Demos
             return client;
         }
 
-        private static async Task StaticSetup(AetherClient client)
+        private static Task StaticSetup(AetherClient client)
         {
             var consumerConfig = new ConsumerConfig("static-consumer"); // Expects a stream named: static_endpoint
             var staticConfig = StaticEndpoint.EndpointConfig.WithConsumer(consumerConfig);
 
-            var staticEndpoint = client.Messaging.AddHandler(staticConfig, StaticEndpoint.Handle);
-
-            await staticEndpoint.StartEndpoint(CancellationToken.None);
-        }
-
-        private static async Task InstanceSetup(AetherClient client)
-        {
-            var instance = new InstanceEndpoint();
-            var instanceEndpoint = client.Messaging.AddEndpoint(InstanceEndpoint.EndpointConfig, instance);
-            await instanceEndpoint.StartEndpoint(CancellationToken.None);
+            return client.Messaging.AddHandler(staticConfig, StaticEndpoint.Handle);
         }
 
         private static async Task PublishMessages(AetherClient client, SomethingHappenedCommand command)

@@ -1,5 +1,4 @@
 using Aether.Abstractions.Messaging;
-using Aether.Abstractions.Messaging.Configuration;
 using Aether.Messaging;
 using Microsoft.Extensions.Logging;
 using NATS.Client.Core;
@@ -11,34 +10,29 @@ namespace Aether.Providers.NATS.Messaging;
 internal class NatsCoreSubscription : ISubscription
 {
     private readonly INatsConnection connection;
+
     private readonly ILogger<NatsCoreSubscription> logger;
-    private readonly SubscriptionConfig subConfig;
-    private readonly Func<MessageContext, CancellationToken, Task<Result<VoidResult>>> handler;
-    private readonly string endpointSubject;
-    private readonly DefaultSubjectTypeMapper subjectTypeMapper;
+    private readonly Func<MessageContext, CancellationToken, Task> handler;
+    private readonly SubjectTypeMapping subjectMapping;
 
     public NatsCoreSubscription(
         INatsConnection connection,
         ILogger<NatsCoreSubscription> logger,
-        SubscriptionContext subscriptionContext
+        NatsSubscriptionContext subscriptionContext
     )
     {
         this.connection = connection;
         this.logger = logger;
-        subConfig = subscriptionContext.SubscriptionConfig;
         handler = subscriptionContext.Handler;
-
-        subjectTypeMapper = DefaultSubjectTypeMapper.From(subConfig);
-        endpointSubject = subjectTypeMapper.Subject;
+        subjectMapping = subscriptionContext.SubjectMapping;
     }
 
     public async Task Subscribe(CancellationToken cancellationToken)
     {
         try
         {
-            logger.LogInformation("Subscribing to {Endpoint} - {Subject}", subConfig.EndpointConfig.EndpointName,
-                endpointSubject);
-            await foreach (var msg in connection.SubscribeAsync<byte[]>(endpointSubject,
+            logger.LogInformation("Subscribing to {Subject}", subjectMapping.Subject);
+            await foreach (var msg in connection.SubscribeAsync<byte[]>(subjectMapping.Subject,
                                cancellationToken: cancellationToken))
             {
                 var result = await ProcessMessage(msg);
@@ -52,7 +46,7 @@ internal class NatsCoreSubscription : ISubscription
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error subscribing to {EndpointSubject}", endpointSubject);
+            logger.LogError(ex, "Error subscribing to {EndpointSubject}", subjectMapping);
         }
 
         return;
@@ -68,8 +62,8 @@ internal class NatsCoreSubscription : ISubscription
             // if we have a subject mapping header, use it to determine the message type
             if (message.Headers.TryGetValue(MessageHeader.SubjectMapping, out var headerType) && headerType.Count > 0)
             {
-                message.MessageType =
-                    subjectTypeMapper.TypeFromAetherMessageType(headerType.First()!);
+                var messageType = subjectMapping.TypeFromMapping(headerType.First()!);
+                message.MessageType = messageType;
             }
 
             var replyFunc = natsMsg.ReplyTo != null
@@ -79,7 +73,7 @@ internal class NatsCoreSubscription : ISubscription
                 )
                 : null;
 
-            return handler(new MessageContext(message, replyFunc), cancellationToken);
+            return Result.TryAsync(() => handler(new MessageContext(message, replyFunc), cancellationToken));
         }
     }
 

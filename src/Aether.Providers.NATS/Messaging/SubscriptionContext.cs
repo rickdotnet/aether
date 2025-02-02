@@ -1,25 +1,25 @@
+using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Messaging;
 using NATS.Client.JetStream.Models;
-using RickDotNet.Base;
 
 namespace Aether.Providers.NATS.Messaging;
 
-public class SubscriptionContext
+public class NatsSubscriptionContext
 {
+    private readonly SubscriptionContext context;
     private const string ConsumerConfigKey = "nats-consumer-config";
     
-    public Func<MessageContext, CancellationToken, Task<Result<VoidResult>>> Handler;
-    public SubscriptionConfig SubscriptionConfig { get; }
+    public SubjectTypeMapping SubjectMapping => context.SubjectMapping;
+    public EndpointConfig EndpointConfig => context.EndpointConfig;
+    public Func<MessageContext, CancellationToken, Task<AckSignal>> Handler => context.Handler;
     public ConsumerConfig? ConsumerConfig { get; }
 
     public bool IsJetStream => ConsumerConfig != null;
     
-    public SubscriptionContext(SubscriptionConfig subConfig, Func<MessageContext, CancellationToken, Task<Result<VoidResult>>> handler)
+    public NatsSubscriptionContext(SubscriptionContext context)
     {
-        SubscriptionConfig = subConfig;
-        Handler = handler;
-        ConsumerConfig = subConfig.EndpointConfig.ProviderConfig.GetValueOrDefault(ConsumerConfigKey) as ConsumerConfig;
+        this.context = context;
+        ConsumerConfig = EndpointConfig.ProviderConfig.GetValueOrDefault(ConsumerConfigKey) as ConsumerConfig;
     }
-
 }

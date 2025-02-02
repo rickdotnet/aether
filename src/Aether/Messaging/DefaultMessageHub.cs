@@ -52,19 +52,18 @@ internal class DefaultMessageHub : IDefaultMessageHub
     public IMessageHub AsHub() => hubs[IDefaultMessageHub.DefaultHubKey];
 
     /// <inheritdoc />
-    public IAetherEndpoint AddEndpoint<T>(EndpointConfig endpointConfig)
+    public Task Start(CancellationToken cancellationToken) => DefaultHub.Start(cancellationToken);
+
+    /// <inheritdoc />
+    public Task AddEndpoint<T>(EndpointConfig endpointConfig)
         => DefaultHub.AddEndpoint<T>(endpointConfig);
-
+    
     /// <inheritdoc />
-    public IAetherEndpoint AddEndpoint<T>(EndpointConfig endpointConfig, T instance) where T : class 
-        => DefaultHub.AddEndpoint(endpointConfig, instance);
-
-    /// <inheritdoc />
-    public IAetherEndpoint AddEndpoint(EndpointConfig endpointConfig, Type endpointType)
+    public Task AddEndpoint(EndpointConfig endpointConfig, Type endpointType)
         => DefaultHub.AddEndpoint(endpointConfig, endpointType);
 
     /// <inheritdoc />
-    public IAetherEndpoint AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler)
+    public Task AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler)
         => DefaultHub.AddHandler(endpointConfig, handler);
 
     /// <inheritdoc />

@@ -1,56 +1,47 @@
 using Aether.Abstractions.Messaging.Configuration;
+using Aether.Messaging;
 
 namespace Aether.Abstractions.Messaging;
 
-public interface ISubjectTypeMapper
+public record SubjectTypeMapping
 {
-    string Subject { get; }
-
-    string TypeMappedSubject(Type messageType);
-    Dictionary<string, Type> SubjectTypeMapping { get; }
-}
-
-public class DefaultSubjectTypeMapper : ISubjectTypeMapper
-{
-    
     public required string Subject { get; init; }
 
-    public string TypeMappedSubject(Type messageType) => TypeMappedSubject(Subject, messageType);
+    public IReadOnlyDictionary<string, Type> TypeMapping { get; init; } = new Dictionary<string, Type>();
 
-    public Dictionary<string, Type> SubjectTypeMapping { get; init; } = new();
+    public Type? TypeFromMapping(string headerMessageType) => TypeMapping.GetValueOrDefault(headerMessageType);
+    public string SubjectMappingForType(Type messageType)
+        => DefaultSubjectTypeMapper.TypeMappedSubject(Subject, messageType);
+}
 
-    public static DefaultSubjectTypeMapper From(SubscriptionConfig subscriptionConfig)
+public class DefaultSubjectTypeMapper
+{
+    public static SubjectTypeMapping From(EndpointConfig endpointConfig, Type? type = null)
     {
-        var subject = GetSubject(subscriptionConfig);
-        return new DefaultSubjectTypeMapper()
+        var subject = GetSubject(endpointConfig);
+        var messageTypes = type?.GetHandlerTypes();
+        return new SubjectTypeMapping
         {
             Subject = subject,
-            SubjectTypeMapping =
-                subscriptionConfig.MessageTypes.ToDictionary(x => TypeMappedSubject(subject, x), x => x)
+            TypeMapping =
+                messageTypes?.ToDictionary(x => TypeMappedSubject(subject, x), x => x) ?? []
         };
     }
     
-    public static DefaultSubjectTypeMapper From(PublishConfig publishConfig) => new() { Subject = GetSubject(publishConfig) };
-
-    // in other versions, the subject includes the message type
-    // might revisit this later
-    public string MessageTypeSubject(string messageType) => $"{Subject}.{messageType.ToLower()}";
-    
-    public Type? TypeFromAetherMessageType(string headerMessageType) 
-        => SubjectTypeMapping.GetValueOrDefault(headerMessageType);
-
+    public static SubjectTypeMapping From(PublishConfig publishConfig) 
+        => new() { Subject = GetSubject(publishConfig) };
 
     public static string TypeMappedSubject(string subject, Type messageType) =>
         $"{subject}.{messageType.Name.ToLower()}";
 
     private static string GetSubject(PublishConfig config)
-        => GetSubject((config.Namespace, config.EndpointName, EndpointType: null, config.Subject));
+        => GetSubject((config.Namespace, config.EndpointName, config.Subject));
 
-    private static string GetSubject(SubscriptionConfig subConfig)
-        => GetSubject((subConfig.EndpointConfig.Namespace, subConfig.EndpointConfig.EndpointName, subConfig.EndpointType, subConfig.EndpointConfig.Subject));
+    private static string GetSubject(EndpointConfig endpointConfig)
+        => GetSubject((endpointConfig.Namespace, endpointConfig.EndpointName,  endpointConfig.Subject));
 
     private static string GetSubject(
-        (string? Namespace, string? EndpointName, Type? EndpointType, string? EndpointSubject) config)
+        (string? Namespace, string? EndpointName, string? EndpointSubject) config)
     {
         if (string.IsNullOrEmpty(config.Namespace)
             && string.IsNullOrEmpty(config.EndpointName)
@@ -65,10 +56,6 @@ public class DefaultSubjectTypeMapper : ISubjectTypeMapper
         // if subject is not set, try to determine it from the endpoint name
         if (string.IsNullOrEmpty(endpoint))
             endpoint = Slugify(config.EndpointName);
-
-        // if endpoint name is not set, try to determine it from the endpoint type
-        if (string.IsNullOrEmpty(endpoint))
-            endpoint = Slugify(config.EndpointType?.Name);
 
         // if namespace is set, prepend it to the endpoint
         if (!string.IsNullOrWhiteSpace(config.Namespace))

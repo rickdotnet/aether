@@ -12,12 +12,10 @@ public class InMemory
         var client = AetherClient.MemoryClient;
 
         var staticEndpoint = client.Messaging.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle);
-        await staticEndpoint.StartEndpoint(CancellationToken.None);
 
-        var instance = new InstanceEndpoint();
-        var instanceEndpoint = client.Messaging.AddEndpoint(InstanceEndpoint.EndpointConfig, instance);
-        await instanceEndpoint.StartEndpoint(CancellationToken.None);
-
+        // new
+        await client.Messaging.Start(CancellationToken.None);
+        
         // send a message - in process or out of process
         var staticPublisher = client.Messaging.CreatePublisher(StaticEndpoint.EndpointConfig);
         var instancePublisher = client.Messaging.CreatePublisher(InstanceEndpoint.EndpointConfig);

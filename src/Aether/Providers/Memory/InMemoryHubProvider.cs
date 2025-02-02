@@ -3,7 +3,6 @@ using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
 using Aether.Messaging;
-using RickDotNet.Base;
 
 namespace Aether.Providers.Memory;
 
@@ -21,13 +20,12 @@ public class InMemoryHubProvider : ISubscriptionProvider, IPublisherProvider
         this.defaultSubscriptionOptions = defaultSubscriptionOptions;
     }
     
-    public ISubscription AddSubscription(SubscriptionConfig config,
-        Func<MessageContext, CancellationToken, Task<Result<VoidResult>>> handler)
+    public ISubscription AddSubscription(SubscriptionContext context)
     {
-        var sub = new InMemorySubscription(handler, defaultSubscriptionOptions);
-        var subjectTypeMapper = DefaultSubjectTypeMapper.From(config);
+        var sub = new InMemorySubscription(context.Handler, defaultSubscriptionOptions);
+        var subjectMapping = DefaultSubjectTypeMapper.From(context.EndpointConfig);
 
-        var subjectKey = subjectTypeMapper.Subject;
+        var subjectKey = subjectMapping.Subject;
         if (!subscriptions.ContainsKey(subjectKey))
             subscriptions[subjectKey] = [];
 

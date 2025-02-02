@@ -10,16 +10,16 @@ public class MessageContext
     public AetherData Data => Message.Data ?? AetherData.Empty;
     internal AetherMessage Message { get; }
     public bool ReplyAvailable => ReplyFunc is not null;
-    public bool AckAvailable => AckFunc is not null;
+    public bool SignalAvailable => SignalFunc is not null;
     private Func<byte[], CancellationToken, Task>? ReplyFunc { get; }
-    public Func<CancellationToken, Task>? AckFunc { get; }
+    public Func<AckSignal, CancellationToken, Task>? SignalFunc { get; }
 
     public MessageContext(AetherMessage message, Func<byte[], CancellationToken, Task>? replyFunc = null,
-        Func<CancellationToken, Task>? ackFunc = null)
+        Func<AckSignal, CancellationToken, Task>? signalFunc = null)
     {
         Message = message;
         ReplyFunc = replyFunc;
-        AckFunc = ackFunc;
+        SignalFunc = signalFunc;
 
         Headers = Message.Headers.AsReadOnly();
     }
@@ -28,13 +28,13 @@ public class MessageContext
         => Task.FromResult(
             ReplyAvailable
                 ? Result.Failure<VoidResult>("No reply function available")
-                : Result.Try(() => { ReplyFunc(response, cancellationToken); })
+                : Result.Try(() => { ReplyFunc!(response, cancellationToken); })
         );
 
-    public Task<Result<VoidResult>> Ack(CancellationToken cancellationToken)
+    public Task<Result<VoidResult>> Signal(AckSignal signal, CancellationToken cancellationToken)
         => Task.FromResult(
-            AckAvailable
+            SignalAvailable
                 ? Result.Failure<VoidResult>("No ack function available")
-                : Result.Try(() => { AckFunc!(cancellationToken); })
+                : Result.Try(() => { SignalFunc!(signal, cancellationToken); })
         );
 }

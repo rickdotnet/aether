@@ -1,4 +1,3 @@
-using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Providers;
 using Aether.Messaging;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +13,6 @@ internal sealed class HubBackgroundService : BackgroundService, IAsyncDisposable
     private readonly AetherClient aether;
     private readonly ILogger<HubBackgroundService> logger;
     private readonly IServiceProvider serviceProvider;
-    private readonly List<IAetherEndpoint> endpoints = [];
 
     public HubBackgroundService(
         IServiceProvider serviceProvider,
@@ -46,10 +44,7 @@ internal sealed class HubBackgroundService : BackgroundService, IAsyncDisposable
                 var subProvider = (ISubscriptionProvider)serviceProvider.GetRequiredService(hubRegistration.SubscriptionProviderType!);
                 var pubProvider = (IPublisherProvider)serviceProvider.GetRequiredService(hubRegistration.PublisherProviderType!);
 
-                // this is the current bottleneck of the system
-                // this SynchronousHub is from a previous iteration of the library
-                // and will be replaced with a more flexible implementation
-                var hub = new SynchronousHub(subProvider, pubProvider, endpointProvider);
+                var hub = new ChannelBackedHub(subProvider, pubProvider, endpointProvider);
 
                 // assign the hub to the aether client
                 aether.Messaging.SetHub(hubRegistration.HubName, hub);
@@ -72,14 +67,11 @@ internal sealed class HubBackgroundService : BackgroundService, IAsyncDisposable
                         onSuccess: async _ =>
                         {
                             logger.LogInformation("Creating Endpoint - {EndpointName}.", endpointName);
-                            var endpoint = hub.CreateEndpoint(endpointRegistration);
-                            endpoints.Add(endpoint);
-
-                            logger.LogInformation("Starting Endpoint - {EndpointName}.", endpointName);
-                            await endpoint.StartEndpoint(stoppingToken);
-                            logger.LogDebug("Endpoint ({EndpointName}) started successfully.", endpointName);
+                            await hub.CreateEndpoint(endpointRegistration);
                         });
                 } // foreach endpointRegistration
+
+                await hub.Start(stoppingToken);
             } // foreach hubRegistration
 
             logger.LogInformation("HubBackgroundService has started.");
@@ -97,23 +89,11 @@ internal sealed class HubBackgroundService : BackgroundService, IAsyncDisposable
         logger.LogWarning("HubBackgroundService has finished execution.");
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         logger.LogInformation("HubBackgroundService is disposing.");
 
-        foreach (var endpoint in endpoints)
-        {
-            try
-            {
-                await endpoint.DisposeAsync();
-                logger.LogDebug("Endpoint disposed successfully.");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "An error occurred while disposing an endpoint.");
-            }
-        }
-
-        logger.LogInformation("ApolloBackgroundService has been disposed.");
+       
+        return ValueTask.CompletedTask;
     }
 }

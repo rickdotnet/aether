@@ -1,10 +1,8 @@
 using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
-using Aether.Messaging;
 using Microsoft.Extensions.Logging;
 using NATS.Client.Core;
-using RickDotNet.Base;
 
 namespace Aether.Providers.NATS.Messaging;
 
@@ -19,10 +17,10 @@ public class NatsSubscriptionProvider : ISubscriptionProvider
         this.loggerFactory = loggerFactory;
     }
 
-    public ISubscription AddSubscription(SubscriptionConfig subConfig,
-        Func<MessageContext, CancellationToken, Task<Result<VoidResult>>> handler)
+    public ISubscription AddSubscription(SubscriptionContext context)
     {
-        var subscriptionContext = new SubscriptionContext(subConfig, handler);
+         
+        var subscriptionContext = new NatsSubscriptionContext(context);
         return subscriptionContext.IsJetStream
             ? new NatsJetStreamSubscription(
                 connection,

@@ -28,17 +28,17 @@ public class Random
             .OnSuccess(endpointConfig => instanceConfig = endpointConfig);
 
         // endpoint option 1 - from service provider
-        await using var endpointProvider = messaging.AddEndpoint<InstanceEndpoint>(instanceConfig);
+        await  messaging.AddEndpoint<InstanceEndpoint>(instanceConfig);
 
-        // endpoint option 2 - from instance
-        var endpoint = new InstanceEndpoint();
-        await using var endpointFromInstance = messaging.AddEndpoint(instanceConfig, endpoint);
+        // endpoint option 2 - from instance  - removed, for now
+        // var endpoint = new InstanceEndpoint();
+        // await messaging.AddEndpoint(instanceConfig, endpoint);
 
         // static option 1
-        await using var handlerMethod = messaging.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle);
+        await messaging.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle);
 
         // static option 2
-        await using var anonHandler = messaging.AddHandler(StaticEndpoint.EndpointConfig, (context, _) =>
+        await  messaging.AddHandler(StaticEndpoint.EndpointConfig, (context, _) =>
         {
             var theThing = context.Data.As<SomethingHappenedCommand>()!;
             Console.WriteLine($"Received message: {theThing.Message}");

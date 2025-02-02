@@ -7,19 +7,21 @@ namespace Aether.Abstractions.Providers;
 public interface IMessageHub
 {
     /// <summary>
+    /// Starts the message hub and subscribes to all configured endpoints.
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <remarks>This method is a NoOp when created using the Hosting library</remarks>
+    public Task Start(CancellationToken cancellationToken);
+    /// <summary>
     /// Adds a new endpoint for the specified type using the given configuration.
     /// </summary>
-    public IAetherEndpoint AddEndpoint<T>(EndpointConfig endpointConfig);
+    public Task AddEndpoint<T>(EndpointConfig endpointConfig);
     
     /// <summary>
     /// Adds a new endpoint for the specified endpoint type using the given configuration.
     /// </summary>
-    public IAetherEndpoint AddEndpoint(EndpointConfig endpointConfig, Type endpointType);
-
-    /// <summary>
-    /// Adds a new endpoint for the specified type using the given configuration and instance.
-    /// </summary>
-    public IAetherEndpoint AddEndpoint<T>(EndpointConfig endpointConfig, T instance) where T : class;
+    public Task AddEndpoint(EndpointConfig endpointConfig, Type endpointType);
 
     /// <summary>
     /// Registers a message handler for the given configuration, using the provided handler function.
@@ -28,7 +30,7 @@ public interface IMessageHub
     /// <param name="handler">
     /// A function to handle messages. Accepts a <see cref="MessageContext"/> and a <see cref="CancellationToken"/>.
     /// </param>
-    public IAetherEndpoint AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler);
+    public Task AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler);
 
     /// <summary>
     /// Creates a publisher for the given endpoint configuration.

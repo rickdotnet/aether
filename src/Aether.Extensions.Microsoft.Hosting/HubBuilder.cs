@@ -1,5 +1,4 @@
 using Aether.Abstractions.Hosting;
-using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
 using Aether.Extensions.Microsoft.Hosting.MessageHub;
@@ -26,7 +25,7 @@ internal class HubBuilder : IHubBuilder
     {
         if (!registerServicesCalled)
             this.UseMemory();
-        
+
         var valid = hubRegistration.Validate();
         valid.OnError(error => throw new InvalidOperationException(error));
 
@@ -57,12 +56,12 @@ internal class HubBuilder : IHubBuilder
     {
         // if this is called, we don't want to default to UseMemory
         registerServicesCalled = true;
-        
+
         hubRegistration.SetProviders<TSubscriptionProvider, TPublisherProvider>();
         aetherBuilder.RegisterServices(configureServices);
-        
     }
 }
+
 public static class HubBuilderExtensions
 {
     public static IHubBuilder UseMemory(this IHubBuilder hubBuilder)
@@ -76,7 +75,7 @@ public static class HubBuilderExtensions
         return hubBuilder;
     }
 
-    public static IAetherEndpoint CreateEndpoint(this SynchronousHub hub, EndpointRegistration registration)
+    public static Task CreateEndpoint(this IMessageHub hub, EndpointRegistration registration)
     {
         return registration.IsHandler
             ? hub.AddHandler(registration.Config, registration.Handler!)

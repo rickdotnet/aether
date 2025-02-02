@@ -1,5 +1,4 @@
 using Aether.Abstractions.Messaging;
-using Aether.Abstractions.Messaging.Configuration;
 using Aether.Messaging;
 using Microsoft.Extensions.Logging;
 using NATS.Client.Core;
@@ -15,22 +14,19 @@ internal class NatsJetStreamSubscription : ISubscription
     private readonly INatsConnection connection;
     private readonly ILogger<NatsJetStreamSubscription> logger;
     private readonly ConsumerConfig consumerConfig;
-    private readonly Func<MessageContext, CancellationToken, Task<Result<VoidResult>>> handler;
-    private readonly DefaultSubjectTypeMapper subjectTypeMapper;
-    private readonly string endpointSubject;
+    private readonly Func<MessageContext, CancellationToken, Task<AckSignal>> handler;
+    private readonly SubjectTypeMapping subjectMapping;
 
     public NatsJetStreamSubscription(
         INatsConnection connection,
         ILogger<NatsJetStreamSubscription> logger,
-        SubscriptionContext subscriptionContext)
+        NatsSubscriptionContext subscriptionContext)
     {
         this.connection = connection;
         this.logger = logger;
         consumerConfig = subscriptionContext.ConsumerConfig!;
         handler = subscriptionContext.Handler;
-
-        subjectTypeMapper = DefaultSubjectTypeMapper.From(subscriptionContext.SubscriptionConfig);
-        endpointSubject = subjectTypeMapper.Subject;
+        subjectMapping = subscriptionContext.SubjectMapping;
     }
 
     public async Task Subscribe(CancellationToken cancellationToken)
@@ -41,7 +37,7 @@ internal class NatsJetStreamSubscription : ISubscription
         {
             var js = new NatsJSContext((NatsConnection)connection);
 
-            var streamNameClean = CleanStreamName(endpointSubject);
+            var streamNameClean = CleanStreamName(subjectMapping.Subject);
 
             logger.LogTrace("Creating consumer {ConsumerName} for stream {StreamName}", consumerConfig.Name,
                 streamNameClean);
@@ -62,12 +58,12 @@ internal class NatsJetStreamSubscription : ISubscription
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error subscribing to {EndpointSubject}", endpointSubject);
+            logger.LogError(ex, "Error subscribing to {EndpointSubject}", subjectMapping);
         }
 
         return;
 
-        async Task<Result<VoidResult>> ProcessMessage(NatsJSMsg<byte[]> msg)
+        async Task<Result<AckSignal>> ProcessMessage(NatsJSMsg<byte[]> msg)
         {
             var message = new AetherMessage
             {
@@ -78,8 +74,8 @@ internal class NatsJetStreamSubscription : ISubscription
             // if we have a subject mapping header, use it to determine the message type
             if (message.Headers.TryGetValue(MessageHeader.SubjectMapping, out var headerType) && headerType.Count > 0)
             {
-                message.MessageType =
-                    subjectTypeMapper.TypeFromAetherMessageType(headerType.First()!);
+                var messageType = subjectMapping.TypeFromMapping(headerType.First()!);
+                message.MessageType = messageType;
             }
 
             var replyFunc = msg.ReplyTo != null
@@ -88,30 +84,46 @@ internal class NatsJetStreamSubscription : ISubscription
                 )
                 : null;
 
-            var acked = false;
-            var ackFunc = new Func<CancellationToken, Task>(async innerCancel =>
-            {
-                acked = true;
-                await msg.AckAsync(cancellationToken: innerCancel);
-            });
+            var ackFunc =
+                new Func<AckSignal, CancellationToken, Task>((signal, innerCancel) =>
+                    HandleSignal(signal, msg, innerCancel));
 
-            var result = await handler(new MessageContext(message, replyFunc, ackFunc), cancellationToken);
+            var result = await Result.TryAsync(
+                () => handler(new MessageContext(message, replyFunc, ackFunc), cancellationToken)
+            );
+
             await result.ResolveAsync(
-                onSuccess: async _ =>
+                onSuccess: async signal =>
                 {
-                    // temporary until we rework the synchronous endpoint
-                    if (!acked)
-                        await msg.AckAsync(cancellationToken: cancellationToken);
+                    switch (signal)
+                    {
+                        case AckSignal.Ack:
+                            await msg.AckAsync(cancellationToken: cancellationToken);
+                            break;
+                        case AckSignal.ExplicitAck:
+                            // will be acked in endpoint, so need to
+                            // hold on to the message until ack function is called
+                            break;
+                    }
                 },
                 onError: async error =>
                 {
                     logger.LogError("Error processing message from {Subject}: {Error}", msg.Subject, error);
-                    if (!acked)
-                        await msg.NakAsync(cancellationToken: cancellationToken);
+                    await msg.NakAsync(cancellationToken: cancellationToken);
                 });
 
             return result;
         }
+    }
+
+    private static Task HandleSignal(AckSignal signal, NatsJSMsg<byte[]> msg, CancellationToken cancellationToken)
+    {
+        return signal switch
+        {
+            AckSignal.Ack => msg.AckAsync(cancellationToken: cancellationToken).AsTask(),
+            AckSignal.Nak => msg.NakAsync(cancellationToken: cancellationToken).AsTask(),
+            _ => Task.CompletedTask
+        };
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;

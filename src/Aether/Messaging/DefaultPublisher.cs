@@ -9,14 +9,11 @@ internal class DefaultPublisher : IPublisher
 {
     private readonly IPublisherProvider providerPublisher;
     private readonly PublishConfig publishConfig;
-    private readonly DefaultSubjectTypeMapper subjectTypeMapper;
 
     public DefaultPublisher(PublishConfig publishConfig, IPublisherProvider providerPublisher)
     {
         this.publishConfig = publishConfig ?? throw new ArgumentNullException(nameof(publishConfig));
         this.providerPublisher = providerPublisher ?? throw new ArgumentNullException(nameof(providerPublisher)); 
-
-        subjectTypeMapper = DefaultSubjectTypeMapper.From(publishConfig);
     }
 
     public Task Send<TCommand>(TCommand commandMessage, CancellationToken cancellationToken) where TCommand : ICommand
@@ -27,9 +24,10 @@ internal class DefaultPublisher : IPublisher
 
     public async Task<TResponse?> Request<TRequest, TResponse>(TRequest requestMessage, CancellationToken cancellationToken) where TRequest : IRequest<TResponse>
     {
+        var subject = DefaultSubjectTypeMapper.From(publishConfig);
         var aetherMessage = AetherMessage.From(
             message: requestMessage,
-            subjectTypeMapper: subjectTypeMapper,
+            subject,
             action: nameof(Request)
         );
         
@@ -41,10 +39,11 @@ internal class DefaultPublisher : IPublisher
 
     private Task PublishInternal<TMessage>(TMessage message, string action, CancellationToken cancellationToken)
     {
+        var subject = DefaultSubjectTypeMapper.From(publishConfig);
         var aetherMessage = AetherMessage.From(
-            message: message,
-            subjectTypeMapper: subjectTypeMapper,
-            action: action
+            message,
+            subject,
+            action
         );
         
         return providerPublisher.Publish(publishConfig, aetherMessage, cancellationToken);
@@ -55,7 +54,7 @@ static class AetherMessageExtensions
     public static void SetResponseHeaders<TResponse>(this AetherMessage message)
     {
         var responseType = typeof(TResponse);
-        message.Headers[AetherHeader.ResponseType] = responseType.Name;
-        message.Headers[AetherHeader.ResponseClrType] = responseType.AssemblyQualifiedName!;
+        message.Headers[MessageHeader.ResponseType] = responseType.Name;
+        message.Headers[MessageHeader.ResponseClrType] = responseType.AssemblyQualifiedName!;
     }
 }

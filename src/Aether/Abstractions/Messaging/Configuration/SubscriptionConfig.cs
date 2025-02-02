@@ -2,19 +2,22 @@
 
 namespace Aether.Abstractions.Messaging.Configuration;
 
-public record SubscriptionConfig
+public record SubscriptionContext
 {
+    public required SubjectTypeMapping SubjectMapping { get; init; }
     public required EndpointConfig EndpointConfig { get; init; }
-    public required Type[] MessageTypes { get; init; } = [];
-    public Type? EndpointType { get; set; }
+    public required Func<MessageContext, CancellationToken, Task<AckSignal>> Handler { get; init; }
 
-    public bool HandlerOnly => EndpointType == null;
-
-    public static SubscriptionConfig ForEndpoint(EndpointConfig endpointConfig, Type? endpointType = null, Type[]? messageTypes = null)
-        => new()
+    public static SubscriptionContext ForEndpoint(EndpointConfig endpointConfig,
+        Func<MessageContext, CancellationToken, Task<AckSignal>> handler,
+        Type? endpointType = null)
+    {
+        var typedSubject = DefaultSubjectTypeMapper.From(endpointConfig, endpointType);
+        return new SubscriptionContext
         {
             EndpointConfig = endpointConfig,
-            EndpointType = endpointType,
-            MessageTypes = messageTypes ?? endpointType?.GetHandlerTypes() ?? [],
+            SubjectMapping = typedSubject,
+            Handler = handler,
         };
+    }
 }
