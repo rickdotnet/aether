@@ -24,7 +24,10 @@ public class EndpointInvoker
         this.handler = handler;
     }
 
-    public async Task<Result<VoidResult>> Invoke(Type messageType, MessageContext context, CancellationToken cancellationToken)
+    public async Task<Result<VoidResult>> Invoke(
+        Type messageType, 
+        MessageContext context,
+        CancellationToken cancellationToken)
     {
         if (IsHandler)
         {
@@ -57,7 +60,8 @@ public class EndpointInvoker
             return await context.Reply(data, cancellationToken);
         }
 
-        var endpointResult = await Result.TryAsync(() => endpointMethod.Invoke(endpointInstance, context, cancellationToken));
+        var endpointResult =
+            await Result.TryAsync(() => endpointMethod.Invoke(endpointInstance, context, cancellationToken));
         return endpointResult;
     }
 
@@ -67,25 +71,44 @@ public class EndpointInvoker
         if (endpointMethod != null)
             return endpointMethod;
 
-        if(endpointType is null)
+        if (endpointType is null)
             return null;
-        
-        // should hit on MessageType, or MessageContext
-        var handleMethod = endpointType.GetMethod("Handle", [messageType, typeof(CancellationToken)]);
+
+        // messageType is currently derived from subject mapping
+        // and based on the interfaces the endpoint implements.
+        // I plan to swap to using the Handle methods instead. Once
+        // this changes we'll be able to use:
+        //   - Handle(MessageType, MessageContext, CancellationToken)   // full
+        //   - Handle(MessageType, CancellationToken)                   // slim method, no context
+        //   - Handle(MessageContext, CancellationToken)                // fallback, context only
+
+        // full handle method
+        var handleMethod =
+            endpointType.GetMethod("Handle", [messageType, typeof(MessageContext), typeof(CancellationToken)]);
+
+        if (handleMethod is not null)
+        {
+            endpointMethod = new EndpointMethod(handleMethod, MethodType.MessageTypeAndMessageContext);
+            handleMethods[messageType] = endpointMethod;
+            return endpointMethod;
+        }
+
+        // handle message type or message context
+        // until we swap to using Handle methods, this will
+        // only hit on MessageContext, aka the fallback method
+        handleMethod = endpointType.GetMethod("Handle", [messageType, typeof(CancellationToken)]);
         if (handleMethod != null)
         {
+            // determine method parameter type
             var methodType = messageType == typeof(MessageContext)
                 ? MethodType.MessageContext
                 : MethodType.MessageType;
+
             endpointMethod = new EndpointMethod(handleMethod, methodType);
             handleMethods[messageType] = endpointMethod;
 
             return endpointMethod;
         }
-
-        // should hit on MessageType and MessageContext
-        handleMethod =
-            endpointType.GetMethod("Handle", [messageType, typeof(MessageContext), typeof(CancellationToken)]);
 
         if (handleMethod == null)
             return null;
@@ -94,7 +117,7 @@ public class EndpointInvoker
         handleMethods[messageType] = endpointMethod;
         return endpointMethod;
     }
-    
+
     private record EndpointMethod
     {
         private MethodInfo MethodInfo { get; }
@@ -111,9 +134,12 @@ public class EndpointInvoker
         {
             return MethodType switch
             {
-                MethodType.MessageType => (Task)MethodInfo.Invoke(endpointInstance, [messageContext.Data.As(messageContext.Message.MessageType!), cancellationToken])!,
-                MethodType.MessageTypeAndMessageContext => (Task)MethodInfo.Invoke(endpointInstance, [messageContext.Data.As(messageContext.Message.MessageType!), messageContext, cancellationToken])!,
-                MethodType.MessageContext => (Task)MethodInfo.Invoke(endpointInstance, [messageContext, cancellationToken])!,
+                MethodType.MessageType => (Task)MethodInfo.Invoke(endpointInstance,
+                    [messageContext.Data.As(messageContext.Message.MessageType!), cancellationToken])!,
+                MethodType.MessageTypeAndMessageContext => (Task)MethodInfo.Invoke(endpointInstance,
+                    [messageContext.Data.As(messageContext.Message.MessageType!), messageContext, cancellationToken])!,
+                MethodType.MessageContext => (Task)MethodInfo.Invoke(endpointInstance,
+                    [messageContext, cancellationToken])!,
                 _ => throw new InvalidOperationException()
             };
         }

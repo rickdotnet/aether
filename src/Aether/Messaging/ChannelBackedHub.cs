@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
+using RickDotNet.Extensions.Base;
 
 namespace Aether.Messaging;
 
@@ -79,10 +80,18 @@ public class ChannelBackedHub : IMessageHub
                 continue; // we'll signal terminate from here
             }
 
+            // messageType is currently set by the sub provider
+            // by looking up the type mapping in the DefaultTypeMapper
+            // this was an apollo construct that could/should go away
+            // we could support more robust type resolution, but tabling
+            // this for now.
+            // we default to MessageContext here, which will fallback
+            // to Handle(MessageContext, CancellationToken)
             var messageType = messageContext.Message.MessageType ?? typeof(MessageContext);
             var result = await invoker.Invoke(messageType, messageContext, cancellationToken);
+            result.OnError(Console.WriteLine);
 
-            // we're auto-acking for now
+            // no need to ack here, since we're auto-acking for now
             // if (result)
             //await messageContext.Signal(AckSignal.Ack, cancellationToken);
         }
@@ -114,7 +123,11 @@ public class ChannelBackedHub : IMessageHub
             endpointType
         );
 
-        var added = invokers.TryAdd(subContext.SubjectMapping.Subject, new EndpointInvoker(endpointType, endpointProvider));
+        var added = invokers.TryAdd(subContext.SubjectMapping.Subject,
+            new EndpointInvoker(endpointType, endpointProvider));
+
+        if (!added)
+            Console.WriteLine("Papa! The invoker was not added!");
         subscriptions.Add(subContext);
 
         return Task.CompletedTask;
@@ -136,7 +149,7 @@ public class ChannelBackedHub : IMessageHub
     public IPublisher CreatePublisher(EndpointConfig endpointConfig)
         => CreatePublisher(endpointConfig.ToPublishConfig());
 
-    public IPublisher CreatePublisher(PublishConfig publishConfig) 
+    public IPublisher CreatePublisher(PublishConfig publishConfig)
         => new DefaultPublisher(publishConfig, publisherProvider);
 }
 
