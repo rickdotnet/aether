@@ -33,22 +33,15 @@ public class EndpointInvoker
         }
 
         if (endpointType is null)
-        {
             return Result.Failure("No endpoint type");
-        }
 
         var endpointInstance = endpointProvider!.GetService(endpointType);
         if (endpointInstance is null)
-        {
             return Result.Failure("No endpoint instance");
-        }
 
         var endpointMethod = GetEndpointMethod(messageType);
         if (endpointMethod is null)
-        {
-            // will be a result
             return Result.Failure("No endpoint method");
-        }
 
         var isRequest = messageType.IsRequest();
 
@@ -66,37 +59,6 @@ public class EndpointInvoker
 
         var endpointResult = await Result.TryAsync(() => endpointMethod.Invoke(endpointInstance, context, cancellationToken));
         return endpointResult;
-    }
-
-    private record EndpointMethod
-    {
-        private MethodInfo MethodInfo { get; }
-        private MethodType MethodType { get; }
-
-        public EndpointMethod(MethodInfo methodInfo, MethodType methodType)
-        {
-            MethodInfo = methodInfo;
-            MethodType = methodType;
-        }
-
-        // invoke result, soon
-        public Task Invoke(object endpointInstance, MessageContext messageContext, CancellationToken cancellationToken)
-        {
-            return MethodType switch
-            {
-                MethodType.MessageType => (Task)MethodInfo.Invoke(endpointInstance, [messageContext.Data.As(messageContext.Message.MessageType!), cancellationToken])!,
-                MethodType.MessageTypeAndMessageContext => (Task)MethodInfo.Invoke(endpointInstance, [messageContext.Data.As(messageContext.Message.MessageType!), messageContext, cancellationToken])!,
-                MethodType.MessageContext => (Task)MethodInfo.Invoke(endpointInstance, [messageContext, cancellationToken])!,
-                _ => throw new InvalidOperationException()
-            };
-        }
-    }
-
-    private enum MethodType
-    {
-        MessageType,
-        MessageContext,
-        MessageTypeAndMessageContext,
     }
 
     private EndpointMethod? GetEndpointMethod(Type messageType)
@@ -131,5 +93,36 @@ public class EndpointInvoker
         endpointMethod = new EndpointMethod(handleMethod, MethodType.MessageTypeAndMessageContext);
         handleMethods[messageType] = endpointMethod;
         return endpointMethod;
+    }
+    
+    private record EndpointMethod
+    {
+        private MethodInfo MethodInfo { get; }
+        private MethodType MethodType { get; }
+
+        public EndpointMethod(MethodInfo methodInfo, MethodType methodType)
+        {
+            MethodInfo = methodInfo;
+            MethodType = methodType;
+        }
+
+        // invoke result, soon
+        public Task Invoke(object endpointInstance, MessageContext messageContext, CancellationToken cancellationToken)
+        {
+            return MethodType switch
+            {
+                MethodType.MessageType => (Task)MethodInfo.Invoke(endpointInstance, [messageContext.Data.As(messageContext.Message.MessageType!), cancellationToken])!,
+                MethodType.MessageTypeAndMessageContext => (Task)MethodInfo.Invoke(endpointInstance, [messageContext.Data.As(messageContext.Message.MessageType!), messageContext, cancellationToken])!,
+                MethodType.MessageContext => (Task)MethodInfo.Invoke(endpointInstance, [messageContext, cancellationToken])!,
+                _ => throw new InvalidOperationException()
+            };
+        }
+    }
+
+    private enum MethodType
+    {
+        MessageType,
+        MessageContext,
+        MessageTypeAndMessageContext,
     }
 }
