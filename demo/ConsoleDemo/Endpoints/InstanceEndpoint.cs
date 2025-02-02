@@ -20,7 +20,7 @@ public class InstanceEndpoint : IHandle<SomethingHappenedCommand>
 
     public Task Handle(MessageContext context, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"Instance Endpoint (Fallback) - {context.Headers[MessageHeader.SubjectMapping]}");
+        Console.WriteLine($"Instance Endpoint (Fallback) - {context.Headers[MessageHeader.MessageTypeMapping]}");
         return Task.CompletedTask;
     }
 }

@@ -3,7 +3,7 @@ namespace Aether.Abstractions.Messaging;
 public static class MessageHeader
 {
     public const string Subject = "aether-endpoint-subject";
-    public const string SubjectMapping = "aether-subject-mapping";
+    public const string MessageTypeMapping = "aether-message-type-mapping";
     public const string MessageType = "aether-message-type";
     public const string MessageClrType = "aether-message-clr-type";
     public const string MessageAction = "aether-message-action";

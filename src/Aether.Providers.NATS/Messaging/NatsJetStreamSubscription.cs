@@ -63,30 +63,30 @@ internal class NatsJetStreamSubscription : ISubscription
 
         return;
 
-        async Task<Result<AckSignal>> ProcessMessage(NatsJSMsg<byte[]> msg)
+        async Task<Result<AckSignal>> ProcessMessage(NatsJSMsg<byte[]> natsMsg)
         {
             var message = new AetherMessage
             {
-                Headers = msg.Headers ?? new NatsHeaders(),
-                Data = msg.Data ?? [],
+                Headers = natsMsg.Headers ?? new NatsHeaders(),
+                Data = natsMsg.Data ?? [],
             };
-
+            message.Headers[MessageHeader.Subject] = natsMsg.Subject;
             // if we have a subject mapping header, use it to determine the message type
-            if (message.Headers.TryGetValue(MessageHeader.SubjectMapping, out var headerType) && headerType.Count > 0)
+            if (message.Headers.TryGetValue(MessageHeader.MessageTypeMapping, out var headerType) && headerType.Count > 0)
             {
                 var messageType = subjectMapping.TypeFromMapping(headerType.First()!);
                 message.MessageType = messageType;
             }
 
-            var replyFunc = msg.ReplyTo != null
+            var replyFunc = natsMsg.ReplyTo != null
                 ? new Func<byte[], CancellationToken, Task>((response, innerCancel) =>
-                    connection.PublishAsync(msg.ReplyTo, response, cancellationToken: innerCancel).AsTask()
+                    connection.PublishAsync(natsMsg.ReplyTo, response, cancellationToken: innerCancel).AsTask()
                 )
                 : null;
 
             var ackFunc =
                 new Func<AckSignal, CancellationToken, Task>((signal, innerCancel) =>
-                    HandleSignal(signal, msg, innerCancel));
+                    HandleSignal(signal, natsMsg, innerCancel));
 
             var result = await Result.TryAsync(
                 () => handler(new MessageContext(message, replyFunc, ackFunc), cancellationToken)
@@ -98,7 +98,7 @@ internal class NatsJetStreamSubscription : ISubscription
                     switch (signal)
                     {
                         case AckSignal.Ack:
-                            await msg.AckAsync(cancellationToken: cancellationToken);
+                            await natsMsg.AckAsync(cancellationToken: cancellationToken);
                             break;
                         case AckSignal.ExplicitAck:
                             // will be acked in endpoint, so need to
@@ -108,8 +108,8 @@ internal class NatsJetStreamSubscription : ISubscription
                 },
                 onError: async error =>
                 {
-                    logger.LogError("Error processing message from {Subject}: {Error}", msg.Subject, error);
-                    await msg.NakAsync(cancellationToken: cancellationToken);
+                    logger.LogError("Error processing message from {Subject}: {Error}", natsMsg.Subject, error);
+                    await natsMsg.NakAsync(cancellationToken: cancellationToken);
                 });
 
             return result;

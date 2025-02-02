@@ -58,9 +58,11 @@ internal class NatsCoreSubscription : ISubscription
                 Headers = natsMsg.Headers ?? new NatsHeaders(),
                 Data = natsMsg.Data ?? [],
             };
+            
+            message.Headers[MessageHeader.Subject] = natsMsg.Subject;
 
-            // if we have a subject mapping header, use it to determine the message type
-            if (message.Headers.TryGetValue(MessageHeader.SubjectMapping, out var headerType) && headerType.Count > 0)
+            // if we have a type mapping header, use it to determine the message type
+            if (message.Headers.TryGetValue(MessageHeader.MessageTypeMapping, out var headerType) && headerType.Count > 0)
             {
                 var messageType = subjectMapping.TypeFromMapping(headerType.First()!);
                 message.MessageType = messageType;

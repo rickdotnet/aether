@@ -3,18 +3,10 @@ using Aether.Messaging;
 
 namespace Aether.Abstractions.Messaging;
 
-public record SubjectTypeMapping
-{
-    public required string Subject { get; init; }
-
-    public IReadOnlyDictionary<string, Type> TypeMapping { get; init; } = new Dictionary<string, Type>();
-
-    public Type? TypeFromMapping(string headerMessageType) => TypeMapping.GetValueOrDefault(headerMessageType);
-    public string SubjectMappingForType(Type messageType)
-        => DefaultSubjectTypeMapper.TypeMappedSubject(Subject, messageType);
-}
-
-public class DefaultSubjectTypeMapper
+/// <summary>
+/// This is on the legacy chopping block
+/// </summary>
+public static class DefaultSubjectTypeMapper
 {
     public static SubjectTypeMapping From(EndpointConfig endpointConfig, Type? type = null)
     {
@@ -24,14 +16,14 @@ public class DefaultSubjectTypeMapper
         {
             Subject = subject,
             TypeMapping =
-                messageTypes?.ToDictionary(x => TypeMappedSubject(subject, x), x => x) ?? []
+                messageTypes?.ToDictionary(x => MessageTypeMapping(subject, x), x => x) ?? []
         };
     }
     
     public static SubjectTypeMapping From(PublishConfig publishConfig) 
         => new() { Subject = GetSubject(publishConfig) };
 
-    public static string TypeMappedSubject(string subject, Type messageType) =>
+    public static string MessageTypeMapping(string subject, Type messageType) =>
         $"{subject}.{messageType.Name.ToLower()}";
 
     private static string GetSubject(PublishConfig config)

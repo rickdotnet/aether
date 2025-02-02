@@ -2,6 +2,7 @@ using System.Text.Json;
 using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Abstractions.Providers;
+using Microsoft.Extensions.Primitives;
 
 namespace Aether.Messaging;
 
@@ -25,13 +26,13 @@ internal class DefaultPublisher : IPublisher
     public async Task<TResponse?> Request<TRequest, TResponse>(TRequest requestMessage, CancellationToken cancellationToken) where TRequest : IRequest<TResponse>
     {
         var subject = DefaultSubjectTypeMapper.From(publishConfig);
-        var aetherMessage = AetherMessage.From(
+        var aetherMessage = CreateMessage(
             message: requestMessage,
             subject,
             action: nameof(Request)
         );
         
-        aetherMessage.SetResponseHeaders<TResponse>();
+        aetherMessage.SetResponseTypeHeaders<TResponse>();
 
         var response = await providerPublisher.Request(publishConfig, aetherMessage, cancellationToken);
         return JsonSerializer.Deserialize<TResponse>(response);
@@ -40,7 +41,7 @@ internal class DefaultPublisher : IPublisher
     private Task PublishInternal<TMessage>(TMessage message, string action, CancellationToken cancellationToken)
     {
         var subject = DefaultSubjectTypeMapper.From(publishConfig);
-        var aetherMessage = AetherMessage.From(
+        var aetherMessage = CreateMessage(
             message,
             subject,
             action
@@ -48,10 +49,32 @@ internal class DefaultPublisher : IPublisher
         
         return providerPublisher.Publish(publishConfig, aetherMessage, cancellationToken);
     }
+    
+    private static AetherMessage CreateMessage<T>(T message, SubjectTypeMapping subjectMapping, string? action)
+    {
+        var messageType = typeof(T);
+        var response = new AetherMessage
+        {
+            Data = AetherData.From(message),
+            MessageType = messageType,
+            Headers = new Dictionary<string, StringValues>
+            {
+                // not setting subject here, subscriber will set it
+                [MessageHeader.MessageTypeMapping] = subjectMapping.MappingForType(messageType),
+                [MessageHeader.MessageType] = messageType.Name,
+                [MessageHeader.MessageClrType] = messageType.AssemblyQualifiedName!,
+            },
+        };
+        
+        if (!string.IsNullOrEmpty(action))
+            response.Headers[MessageHeader.MessageAction] = action;
+        
+        return response;
+    }
 }
 static class AetherMessageExtensions
 {
-    public static void SetResponseHeaders<TResponse>(this AetherMessage message)
+    public static void SetResponseTypeHeaders<TResponse>(this AetherMessage message)
     {
         var responseType = typeof(TResponse);
         message.Headers[MessageHeader.ResponseType] = responseType.Name;
