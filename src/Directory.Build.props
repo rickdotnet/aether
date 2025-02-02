@@ -9,7 +9,7 @@
 		<PackageProjectUrl>https://aether.rickdot.net</PackageProjectUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageTags>Aether;NATS;Distributed;Messaging;pubsub;endpoint;</PackageTags>
-		<Description>Distributed System library.</Description>
+		<Description>Distributed system glue.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 	
