@@ -7,6 +7,7 @@
 //await HostDemo.Run(HostDemo.ExampleType.ExampleTwo);
 await HostDemo.Run(HostDemo.ExampleType.ExampleThree);
 
+//await StorageDemo.Run();
 
 Console.WriteLine("Exiting in 5 seconds...");
 await Task.Delay(5000);

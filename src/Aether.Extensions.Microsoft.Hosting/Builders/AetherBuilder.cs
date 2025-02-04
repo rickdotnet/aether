@@ -1,8 +1,7 @@
 using Aether.Abstractions.Hosting;
-using Aether.Extensions.Microsoft.Hosting.MessageHub;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Aether.Extensions.Microsoft.Hosting;
+namespace Aether.Extensions.Microsoft.Hosting.Builders;
 
 public class AetherBuilder : IAetherBuilder
 {
@@ -16,7 +15,7 @@ public class AetherBuilder : IAetherBuilder
     {
         this.services = services;
         Messaging = new MessagingBuilder(this);
-        Storage = new StorageBuilder();
+        Storage = new StorageBuilder(this);
     }
 
     internal void Build()
@@ -33,7 +32,7 @@ public class AetherBuilder : IAetherBuilder
         // implementations at runtime
         services.AddSingleton<AetherClient>(AetherClient.MemoryClient);
         services.AddSingleton<IAetherClient>(p => p.GetRequiredService<AetherClient>());
-        services.AddHostedService<HubBackgroundService>();
+        services.AddHostedService<AetherBackgroundService>();
     }
 
 

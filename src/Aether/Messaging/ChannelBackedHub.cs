@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
-using Aether.Abstractions.Providers;
 using RickDotNet.Extensions.Base;
 
 namespace Aether.Messaging;
@@ -10,13 +9,13 @@ namespace Aether.Messaging;
 public class ChannelBackedHub : IMessageHub
 {
     private readonly Channel<MessageContext> messageChannel;
-    private readonly int maxWorkers;
     private readonly ISubscriptionProvider subProvider;
     private readonly IPublisherProvider publisherProvider;
-    private readonly IEndpointProvider? endpointProvider;
-    private readonly List<Task> workerTasks;
+    private readonly List<Task> workerTasks = new();
     private readonly List<SubscriptionContext> subscriptions = new();
     private readonly ConcurrentDictionary<string, EndpointInvoker> invokers = new();
+    private readonly int maxWorkers;
+    private readonly IEndpointProvider? endpointProvider;
     private CancellationTokenSource? cts;
 
     public ChannelBackedHub(
@@ -27,16 +26,12 @@ public class ChannelBackedHub : IMessageHub
         int bufferCapacity = 100
     )
     {
-        // Dependency injection for flexibility
+        messageChannel = Channel.CreateBounded<MessageContext>(bufferCapacity);
+
         this.subProvider = subProvider;
         this.publisherProvider = publisherProvider;
         this.endpointProvider = endpointProvider;
-
-        // Configure the channel with some backpressure capacity
-        messageChannel = Channel.CreateBounded<MessageContext>(bufferCapacity);
-
         this.maxWorkers = maxWorkers;
-        workerTasks = new List<Task>();
     }
 
     public Task Start(CancellationToken cancellationToken)
@@ -46,9 +41,7 @@ public class ChannelBackedHub : IMessageHub
         cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         for (var i = 0; i < maxWorkers; i++)
-        {
             workerTasks.Add(Task.Run(() => ProcessMessagesAsync(cts.Token), cts.Token)); // do we want the second token?
-        }
 
         foreach (var subscription in subscriptions)
         {
@@ -63,21 +56,20 @@ public class ChannelBackedHub : IMessageHub
     {
         await foreach (var messageContext in messageChannel.Reader.ReadAllAsync(cancellationToken))
         {
-            // get endpoint type from subject
             var subject = messageContext.Message.Subject;
             if (subject is null)
             {
-                // log error
                 Console.WriteLine("No subject on message");
-                continue; // we'll signal terminate from here
+                await messageContext.Signal(AckSignal.DeadLetter, cancellationToken);
+                continue;
             }
 
             var invoker = invokers.GetValueOrDefault(subject);
             if (invoker is null)
             {
-                // log error
                 Console.WriteLine($"No invoker found for {subject}");
-                continue; // we'll signal terminate from here
+                await messageContext.Signal(AckSignal.DeadLetter, cancellationToken);
+                continue; 
             }
 
             // messageType is currently set by the sub provider
@@ -99,8 +91,8 @@ public class ChannelBackedHub : IMessageHub
 
     public async Task Stop()
     {
-        messageChannel.Writer.Complete(); // Signal we're done
-        await Task.WhenAll(workerTasks); // Wait for all workers to finish
+        messageChannel.Writer.Complete();
+        await Task.WhenAll(workerTasks); 
     }
 
     private Task<AckSignal> InnerHandle(MessageContext messageContext, CancellationToken cancellationToken)
@@ -123,11 +115,14 @@ public class ChannelBackedHub : IMessageHub
             endpointType
         );
 
-        var added = invokers.TryAdd(subContext.SubjectMapping.Subject,
-            new EndpointInvoker(endpointType, endpointProvider));
+        var added = invokers.TryAdd(
+            subContext.SubjectMapping.Subject,
+            new EndpointInvoker(endpointType, endpointProvider)
+        );
 
         if (!added)
-            Console.WriteLine("Papa! The invoker was not added!");
+            Console.WriteLine("Pa Pa! The invoker wasn't added!");
+        
         subscriptions.Add(subContext);
 
         return Task.CompletedTask;
@@ -140,7 +135,14 @@ public class ChannelBackedHub : IMessageHub
             InnerHandle
         );
 
-        var added = invokers.TryAdd(subContext.SubjectMapping.Subject, new EndpointInvoker(handler));
+        var added = invokers.TryAdd(
+            subContext.SubjectMapping.Subject,
+            new EndpointInvoker(handler)
+        );
+        
+        if (!added)
+            Console.WriteLine("Pa Pa! The invoker wasn't added!");
+        
         subscriptions.Add(subContext);
 
         return Task.CompletedTask;

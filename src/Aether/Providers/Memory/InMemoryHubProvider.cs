@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
-using Aether.Abstractions.Providers;
 using Aether.Messaging;
 
 namespace Aether.Providers.Memory;

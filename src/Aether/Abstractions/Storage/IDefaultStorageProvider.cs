@@ -4,25 +4,16 @@ namespace Aether.Abstractions.Storage;
 
 public interface IDefaultStorageProvider : IStorageProvider
 {
+    public const string DefaultStoreName = "default"; // TODO: this value is mentioned in comments below;
     /// <summary>
     /// Returns the default provider
     /// </summary>
     /// <returns>The default provider</returns>
     IStorageProvider AsProvider();
 
-    /// <summary>
-    /// Returns the provider with the specified key
-    /// </summary>
-    /// <param name="providerKey">The key of the provider</param>
-    /// <returns>The provider with the specified key</returns>
-    IStorageProvider GetProvider(string providerKey);
 
-    /// <summary>
-    /// Returns a provider of the specified type
-    /// </summary>
-    /// <typeparam name="TProvider"></typeparam>
-    /// <returns></returns>
-    TProvider GetProvider<TProvider>() where TProvider : IStorageProvider;
+    Result<IStorageProvider> GetStore(string storeName);
+    Result<VoidResult> SetStore(string storeName, IStorageProvider provider);
 }
 
 public interface IStorageProvider
@@ -32,8 +23,6 @@ public interface IStorageProvider
     ValueTask<Result<AetherData>> Get(string id, CancellationToken token = default);
     ValueTask<Result<AetherData>> Insert(string id, AetherData data, CancellationToken token = default);
     ValueTask<Result<AetherData>> Delete(string id, CancellationToken token = default);
-    
-    // TODO: decide on if a key filter makes sense or not  
-    ValueTask<Result<IEnumerable<string>>> ListKeys(FilterCriteria<string>? filterCriteria = null, CancellationToken token = default);
+    ValueTask<Result<IEnumerable<string>>> ListKeys(CancellationToken token = default);
     ValueTask<Result<IEnumerable<AetherData>>> List<TData>(FilterCriteria<TData>? filterCriteria = null, CancellationToken token = default);
 }

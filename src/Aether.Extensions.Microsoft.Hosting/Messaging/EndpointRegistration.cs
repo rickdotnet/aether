@@ -2,7 +2,7 @@ using Aether.Abstractions.Messaging.Configuration;
 using Aether.Messaging;
 using RickDotNet.Base;
 
-namespace Aether.Extensions.Microsoft.Hosting.MessageHub;
+namespace Aether.Extensions.Microsoft.Hosting.Messaging;
 
 public sealed class EndpointRegistration
 {

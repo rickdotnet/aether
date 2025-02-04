@@ -1,13 +1,13 @@
 using Aether.Abstractions.Hosting;
+using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
-using Aether.Abstractions.Providers;
-using Aether.Extensions.Microsoft.Hosting.MessageHub;
+using Aether.Extensions.Microsoft.Hosting.Messaging;
 using Aether.Messaging;
 using Aether.Providers.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using RickDotNet.Extensions.Base;
 
-namespace Aether.Extensions.Microsoft.Hosting;
+namespace Aether.Extensions.Microsoft.Hosting.Builders;
 
 internal class HubBuilder : IHubBuilder
 {

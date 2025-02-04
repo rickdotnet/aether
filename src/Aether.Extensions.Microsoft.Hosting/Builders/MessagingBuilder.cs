@@ -1,7 +1,7 @@
 using Aether.Abstractions.Hosting;
-using Aether.Abstractions.Providers;
+using Aether.Abstractions.Messaging;
 
-namespace Aether.Extensions.Microsoft.Hosting;
+namespace Aether.Extensions.Microsoft.Hosting.Builders;
 
 internal class MessagingBuilder : IMessagingBuilder
 {

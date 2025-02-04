@@ -1,5 +1,5 @@
+using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
-using Aether.Abstractions.Providers;
 using Aether.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 

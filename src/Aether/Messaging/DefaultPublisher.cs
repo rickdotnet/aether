@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
-using Aether.Abstractions.Providers;
 using Microsoft.Extensions.Primitives;
 
 namespace Aether.Messaging;
@@ -55,7 +54,7 @@ internal class DefaultPublisher : IPublisher
         var messageType = typeof(T);
         var response = new AetherMessage
         {
-            Data = AetherData.From(message),
+            Data = AetherData.Serialize(message),
             MessageType = messageType,
             Headers = new Dictionary<string, StringValues>
             {

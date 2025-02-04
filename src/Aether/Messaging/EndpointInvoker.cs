@@ -1,5 +1,5 @@
 using System.Reflection;
-using Aether.Abstractions.Providers;
+using Aether.Abstractions.Messaging;
 using RickDotNet.Base;
 
 namespace Aether.Messaging;
@@ -56,7 +56,7 @@ public class EndpointInvoker
             var response =
                 await (dynamic)endpointMethod.Invoke(endpointInstance, context, cancellationToken);
 
-            var data = AetherData.From(response);
+            var data = AetherData.Serialize(response);
             return await context.Reply(data, cancellationToken);
         }
 

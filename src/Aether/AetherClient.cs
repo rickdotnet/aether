@@ -1,4 +1,4 @@
-﻿using Aether.Abstractions.Providers;
+﻿using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Storage;
 using Aether.Messaging;
 using Aether.Providers.Memory;

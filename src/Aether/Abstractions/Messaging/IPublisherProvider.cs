@@ -1,7 +1,6 @@
-using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 
-namespace Aether.Abstractions.Providers;
+namespace Aether.Abstractions.Messaging;
 
 public interface IPublisherProvider
 {

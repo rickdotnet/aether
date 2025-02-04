@@ -1,4 +1,4 @@
-using Aether.Abstractions.Providers;
+using Aether.Abstractions.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using RickDotNet.Base;
 

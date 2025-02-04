@@ -9,7 +9,7 @@ public sealed class AetherData
     public Memory<byte> Data { get; }
     public byte[] ToArray() => Data.ToArray();
 
-    internal AetherData(Memory<byte> data)
+    public AetherData(Memory<byte> data)
     {
         Data = data;
     }
@@ -42,7 +42,7 @@ public sealed class AetherData
     /// <param name="data">The data to create the AetherData instance from.</param>
     /// <typeparam name="T">The type of the data.</typeparam>
     /// <returns>An AetherData instance created from the specified data.</returns>
-    public static AetherData From<T>(T data)
+    public static AetherData Serialize<T>(T data)
     {
         var json = System.Text.Json.JsonSerializer.Serialize(data);
         return new AetherData(System.Text.Encoding.UTF8.GetBytes(json));

@@ -1,4 +1,4 @@
-namespace Aether.Abstractions.Providers;
+namespace Aether.Abstractions.Messaging;
 
 public interface IEndpointProvider
 {
