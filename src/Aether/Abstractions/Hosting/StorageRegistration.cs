@@ -13,6 +13,6 @@ public sealed record StorageRegistration
         ProviderFactoryType = providerFactoryType;
     }
 
-    public static StorageRegistration From<T>(string storeName) where T : IStorageProviderFactory
+    public static StorageRegistration From<T>(string storeName) where T : IStoreProvider
         => new(storeName, typeof(T));
 }

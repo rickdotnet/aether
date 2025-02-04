@@ -24,7 +24,7 @@ public static class Startup
 
     public static IStorageBuilder AddNatsStore(this IStorageBuilder storageBuilder, string storeName)
     {
-        storageBuilder.AddStore<NatsStorageProviderFactory>(storeName);
+        storageBuilder.AddStore<NatsStoreProvider>(storeName);
         return storageBuilder;
     }
 }

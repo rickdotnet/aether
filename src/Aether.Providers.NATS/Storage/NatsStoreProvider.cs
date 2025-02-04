@@ -6,19 +6,19 @@ using NATS.Net;
 
 namespace Aether.Providers.NATS.Storage;
 
-public sealed class NatsStorageProviderFactory : IStorageProviderFactory
+public sealed class NatsStoreProvider : IStoreProvider
 {
     private readonly INatsKVContext kvContext;
 
-    public NatsStorageProviderFactory(INatsConnection nats)
+    public NatsStoreProvider(INatsConnection nats)
     {
         kvContext = nats.CreateKeyValueStoreContext();
     }
 
-    public async Task<IStorageProvider> CreateStore(StorageRegistration registration,
+    public async Task<IStore> CreateStore(StorageRegistration registration,
         CancellationToken cancellationToken = default)
     {
-        return new NatsKvStorageProvider(
+        return new NatsKvStore(
             await kvContext.CreateStoreAsync(registration.StoreName, cancellationToken)
         );
     }

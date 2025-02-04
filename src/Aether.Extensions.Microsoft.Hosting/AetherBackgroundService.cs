@@ -65,7 +65,7 @@ internal sealed class AetherBackgroundService : BackgroundService, IAsyncDisposa
         foreach (var storageRegistration in storageRegistrations)
         {
             var storageProviderFactory =
-                (IStorageProviderFactory)serviceProvider.GetRequiredService(storageRegistration.ProviderFactoryType!);
+                (IStoreProvider)serviceProvider.GetRequiredService(storageRegistration.ProviderFactoryType!);
             aether.Storage.SetStore(
                 storageRegistration.StoreName,
                 await storageProviderFactory.CreateStore(storageRegistration)

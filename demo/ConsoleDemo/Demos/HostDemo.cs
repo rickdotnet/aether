@@ -1,6 +1,7 @@
 using Aether;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Extensions.Microsoft.Hosting;
+using Aether.Extensions.Microsoft.Hosting.Builders;
 using Aether.Providers.NATS;
 using Aether.Providers.NATS.Messaging;
 using ConsoleDemo.Endpoints;

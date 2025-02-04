@@ -2,9 +2,9 @@ using Aether.Abstractions.Hosting;
 
 namespace Aether.Abstractions.Storage;
 
-public interface IStorageProviderFactory
+public interface IStoreProvider
 {
-    Task<IStorageProvider> CreateStore(
+    Task<IStore> CreateStore(
         StorageRegistration registration,
         CancellationToken cancellationToken = default);
 }

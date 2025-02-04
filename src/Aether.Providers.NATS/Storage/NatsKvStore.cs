@@ -4,11 +4,11 @@ using RickDotNet.Base;
 
 namespace Aether.Providers.NATS.Storage;
 
-public class NatsKvStorageProvider : IStorageProvider
+public class NatsKvStore : IStore
 {
     private readonly INatsKVStore kvStore;
 
-    public NatsKvStorageProvider(INatsKVStore kvStore)
+    public NatsKvStore(INatsKVStore kvStore)
     {
         this.kvStore = kvStore;
     }

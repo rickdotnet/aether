@@ -2,23 +2,22 @@
 using Aether.Abstractions.Storage;
 using Aether.Messaging;
 using Aether.Providers.Memory;
-using Aether.Providers.Storage;
 
 namespace Aether;
 
 public interface IAetherClient
 {
     IDefaultMessageHub Messaging { get; }
-    IDefaultStorageProvider Storage { get; }
+    IDefaultStore Storage { get; }
 }
 
 public class AetherClient : IAetherClient
 {
     public static readonly AetherClient MemoryClient = CreateMemoryClient();
     public IDefaultMessageHub Messaging { get; }
-    public IDefaultStorageProvider Storage { get; }
+    public IDefaultStore Storage { get; }
 
-    public AetherClient(IDefaultMessageHub messaging, IDefaultStorageProvider storage)
+    public AetherClient(IDefaultMessageHub messaging, IDefaultStore storage)
     {
         Messaging = messaging;
         Storage = storage;
@@ -27,7 +26,7 @@ public class AetherClient : IAetherClient
     private static AetherClient CreateMemoryClient()
     {
         var inMemoryProvider = new InMemoryHubProvider();
-        var storageProvider = new InMemoryStorageProvider();
+        var inMemoryStore = new InMemoryStore();
 
         var syncHub = new ChannelBackedHub(
             subProvider: inMemoryProvider,
@@ -36,7 +35,7 @@ public class AetherClient : IAetherClient
 
         return new AetherClient(
             new DefaultMessageHub(syncHub),
-            new DefaultStorageProvider(storageProvider)
+            new DefaultStore(inMemoryStore)
         );
     }
 
@@ -46,7 +45,7 @@ public class AetherClient : IAetherClient
 
         return new AetherClient(
             new DefaultMessageHub(syncHub),
-            new DefaultStorageProvider(new InMemoryStorageProvider())
+            new DefaultStore(new InMemoryStore())
         );
     }
 }

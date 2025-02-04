@@ -13,10 +13,10 @@ public class StorageBuilder : IStorageBuilder
         this.aetherBuilder = aetherBuilder;
     }
 
-    public IStorageBuilder AddStore<T>() where T : IStorageProviderFactory
-        => AddStore<T>(IDefaultStorageProvider.DefaultStoreName);
+    public IStorageBuilder AddStore<T>() where T : IStoreProvider
+        => AddStore<T>(IDefaultStore.DefaultStoreName);
 
-    public IStorageBuilder AddStore<T>(string storeName) where T : IStorageProviderFactory
+    public IStorageBuilder AddStore<T>(string storeName) where T : IStoreProvider
         => AddStore(StorageRegistration.From<T>(storeName));
 
     public IStorageBuilder AddStore(StorageRegistration registration)

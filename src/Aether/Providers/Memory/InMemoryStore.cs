@@ -4,18 +4,16 @@ using RickDotNet.Base;
 
 namespace Aether.Providers.Memory;
 
-public class InMemoryStorageProvider : IStorageProvider
+public class InMemoryStore : IStore
 {
     private readonly MemoryCache memoryCache = new(new MemoryCacheOptions());
 
-    public ValueTask<Result<AetherData>> Get(string id, CancellationToken token = default)
-    {
-        return ValueTask.FromResult(
+    public ValueTask<Result<AetherData>> Get(string id, CancellationToken token = default) 
+        => ValueTask.FromResult(
             memoryCache.TryGetValue(id, out Memory<byte> data)
                 ? Result.Success(new AetherData(data))
                 : Result.Failure<AetherData>($"No data found for id: {id}")
         );
-    }
 
     public ValueTask<Result<AetherData>> Insert(string id, AetherData data, CancellationToken token = default)
     {
