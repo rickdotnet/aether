@@ -12,7 +12,7 @@ internal record SubscriptionOptions
     public int? MaxCapacity { get; init; }
 }
 
-internal class InMemorySubscription : ISubscription
+internal class MemorySubscription : ISubscription
 {
     public ChannelWriter<MessageContext> Writer { get; }
     private readonly Func<MessageContext, CancellationToken, Task> handler;
@@ -21,7 +21,7 @@ internal class InMemorySubscription : ISubscription
     private Action disposeAction = () => { };
 
 
-    public InMemorySubscription(Func<MessageContext, CancellationToken, Task> handler, SubscriptionOptions? subscriptionOptions = null)
+    public MemorySubscription(Func<MessageContext, CancellationToken, Task> handler, SubscriptionOptions? subscriptionOptions = null)
     {
         this.handler = handler;
         this.subscriptionOptions = subscriptionOptions;

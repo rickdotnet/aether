@@ -4,7 +4,7 @@ using RickDotNet.Base;
 
 namespace Aether.Providers.Memory;
 
-public class InMemoryStore : IStore
+public class MemoryStore : IStore
 {
     private readonly MemoryCache memoryCache = new(new MemoryCacheOptions());
 

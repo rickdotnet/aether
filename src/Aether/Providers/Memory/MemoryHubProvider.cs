@@ -5,23 +5,23 @@ using Aether.Messaging;
 
 namespace Aether.Providers.Memory;
 
-public class InMemoryHubProvider : ISubscriptionProvider, IPublisherProvider
+public class MemoryHubProvider : ISubscriptionProvider, IPublisherProvider
 {
     private readonly SubscriptionOptions? defaultSubscriptionOptions;
-    private readonly ConcurrentDictionary<string, List<InMemorySubscription>> subscriptions = new();
+    private readonly ConcurrentDictionary<string, List<MemorySubscription>> subscriptions = new();
     private readonly TimeSpan requestTimeout = TimeSpan.FromSeconds(30);
     
-    public InMemoryHubProvider()
+    public MemoryHubProvider()
     {
     }
-    internal InMemoryHubProvider(SubscriptionOptions? defaultSubscriptionOptions = null)
+    internal MemoryHubProvider(SubscriptionOptions? defaultSubscriptionOptions = null)
     {
         this.defaultSubscriptionOptions = defaultSubscriptionOptions;
     }
     
     public ISubscription AddSubscription(SubscriptionContext context)
     {
-        var sub = new InMemorySubscription(context.Handler, defaultSubscriptionOptions);
+        var sub = new MemorySubscription(context.Handler, defaultSubscriptionOptions);
         var subjectMapping = DefaultSubjectTypeMapper.From(context.EndpointConfig);
 
         var subjectKey = subjectMapping.Subject;

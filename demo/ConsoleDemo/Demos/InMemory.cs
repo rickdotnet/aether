@@ -3,7 +3,7 @@ using ConsoleDemo.Endpoints;
 
 namespace ConsoleDemo.Demos;
 
-public class InMemory
+public class Memory
 {
     public static async Task Run()
     {

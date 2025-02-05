@@ -66,10 +66,10 @@ public static class HubBuilderExtensions
 {
     public static IHubBuilder UseMemory(this IHubBuilder hubBuilder)
     {
-        hubBuilder.RegisterServices<InMemoryHubProvider, InMemoryHubProvider>(
+        hubBuilder.RegisterServices<MemoryHubProvider, MemoryHubProvider>(
             services =>
                 services
-                    .AddSingleton<InMemoryHubProvider>()
+                    .AddSingleton<MemoryHubProvider>()
         );
 
         return hubBuilder;

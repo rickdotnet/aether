@@ -25,8 +25,8 @@ public class AetherClient : IAetherClient
 
     private static AetherClient CreateMemoryClient()
     {
-        var inMemoryProvider = new InMemoryHubProvider();
-        var inMemoryStore = new InMemoryStore();
+        var inMemoryProvider = new MemoryHubProvider();
+        var inMemoryStore = new MemoryStore();
 
         var syncHub = new ChannelBackedHub(
             subProvider: inMemoryProvider,
@@ -45,7 +45,7 @@ public class AetherClient : IAetherClient
 
         return new AetherClient(
             new DefaultMessageHub(syncHub),
-            new DefaultStore(new InMemoryStore())
+            new DefaultStore(new MemoryStore())
         );
     }
 }

@@ -2,6 +2,7 @@ using Aether;
 using Aether.Abstractions.Messaging.Configuration;
 using Aether.Extensions.Microsoft.Hosting;
 using Aether.Extensions.Microsoft.Hosting.Builders;
+using Aether.Providers.Memory;
 using Aether.Providers.NATS;
 using Aether.Providers.NATS.Messaging;
 using ConsoleDemo.Endpoints;
@@ -118,14 +119,18 @@ public class HostDemo
     {
         builder.Services.AddNatsClient(nats => nats.ConfigureOptions(opts => opts with { Url = "nats://localhost:4222" }));
         builder.Services.AddAether(
-            ab => ab.Messaging
-                .AddHub(hub => hub // default is memory
-                    .AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle))
-                .AddHub("nats", // named hub for nats
-                    hub => hub
-                        .UseNats()
-                        .AddEndpoint<InstanceEndpoint>(durableConfig)
-                )
-        );
+            ab =>
+            {
+                ab.Messaging
+                    .AddHub(hub => hub // default is memory
+                        .AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle))
+                    .AddHub("nats", // named hub for nats
+                        hub => hub
+                            .UseNats()
+                            .AddEndpoint<InstanceEndpoint>(durableConfig)
+                    );
+                ab.Storage
+                    .AddMemoryStore("second-store");
+            });
     }
 }

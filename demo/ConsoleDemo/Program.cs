@@ -1,6 +1,6 @@
 ﻿using ConsoleDemo.Demos;
 
-//await InMemory.Run();
+//await Memory.Run();
 //await Nats.Run();
 
 //await HostDemo.Run();
