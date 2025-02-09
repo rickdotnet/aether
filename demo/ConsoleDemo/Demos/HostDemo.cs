@@ -59,7 +59,7 @@ public class HostDemo
         #endregion
 
         var host = builder.Build();
-        var hostTask = host.RunAsync(); // keep it running
+        _ = host.RunAsync(); // keep it running
 
         // give everything time to start up
         await Task.Delay(3000);
@@ -130,7 +130,8 @@ public class HostDemo
                             .AddEndpoint<InstanceEndpoint>(durableConfig)
                     );
                 ab.Storage
-                    .AddMemoryStore("second-store");
+                    .AddMemoryStore("second-store")
+                    .AddNatsStore("distributed");
             });
     }
 }
