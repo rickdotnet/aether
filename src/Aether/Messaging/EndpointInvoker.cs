@@ -1,6 +1,7 @@
 using System.Reflection;
 using Aether.Abstractions.Messaging;
 using RickDotNet.Base;
+using RickDotNet.Extensions.Base;
 
 namespace Aether.Messaging;
 
@@ -25,7 +26,7 @@ public class EndpointInvoker
     }
 
     public async Task<Result<VoidResult>> Invoke(
-        Type messageType, 
+        Type messageType,
         MessageContext context,
         CancellationToken cancellationToken)
     {
@@ -38,9 +39,15 @@ public class EndpointInvoker
         if (endpointType is null)
             return Result.Failure("No endpoint type");
 
-        var endpointInstance = endpointProvider!.GetService(endpointType);
+        // TODO: I know this is funky, it will get cleaned up
+        //            that's what comments are for. Shoutout bitm0de.
+        var endpointInstanceResult = Result.Try(() => endpointProvider!.GetService(endpointType));
+        var errorMessage = "";
+        endpointInstanceResult.OnError(error => errorMessage = error);
+
+        var endpointInstance = endpointInstanceResult.ValueOrDefault();
         if (endpointInstance is null)
-            return Result.Failure("No endpoint instance");
+            return Result.Failure(errorMessage);
 
         var endpointMethod = GetEndpointMethod(messageType);
         if (endpointMethod is null)
