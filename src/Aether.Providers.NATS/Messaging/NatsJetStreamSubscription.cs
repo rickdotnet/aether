@@ -45,8 +45,13 @@ internal class NatsJetStreamSubscription : ISubscription
 
             var consumer = await js.CreateOrUpdateConsumerAsync(streamNameClean, consumerConfig, cancellationToken);
 
+            var consumeOpts = new NatsJSConsumeOpts
+            {
+                MaxMsgs = consumerConfig.MaxBatch > 0 ? consumerConfig.MaxBatch : 1000,
+            };
+
             logger.LogInformation("Subscribing to stream {Stream}", streamNameClean);
-            await foreach (var msg in consumer.ConsumeAsync<byte[]>(cancellationToken: cancellationToken))
+            await foreach (var msg in consumer.ConsumeAsync<byte[]>(opts: consumeOpts, cancellationToken: cancellationToken))
             {
                 var result = await ProcessMessage(msg);
                 result.OnFailure(error =>
@@ -66,11 +71,10 @@ internal class NatsJetStreamSubscription : ISubscription
 
         async Task<Result<AckSignal>> ProcessMessage(NatsJSMsg<byte[]> natsMsg)
         {
-            var headers = natsMsg.Headers?.ToDictionary(kp => kp.Key, kp => kp.Value) 
-                          ?? new Dictionary<string, StringValues>();
-            
+            var headers = natsMsg.Headers?.ToDictionary(kp => kp.Key, kp => kp.Value) ?? new Dictionary<string, StringValues>();
+
             headers[MessageHeader.Subject] = natsMsg.Subject;
-            
+
             var message = new AetherMessage
             {
                 Headers = headers,

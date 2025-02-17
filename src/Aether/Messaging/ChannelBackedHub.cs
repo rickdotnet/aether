@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 using System.Threading.Channels;
 using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
@@ -67,9 +68,44 @@ public class ChannelBackedHub : IMessageHub
             var invoker = invokers.GetValueOrDefault(subject);
             if (invoker is null)
             {
+                // POOR MANS WILDCARD MATCHING
+                // will need to rework this soon
+                //
+                // wildcard subjects contain a '*' or a '>' character
+                // if we registered a wildcard subject it won't match 1-1
+                // we need a poor-man's wildcard matching to NATS
+                // * could act like (.*) in regex, and > could act like "starts with"
+
+                var wildcards = invokers.Keys.Where(key => key.Contains('*')).ToList();
+                if (wildcards.Any())
+                {
+                    foreach (var wildcard in wildcards)
+                    {
+                        var pattern = $"^{wildcard.Replace(".","\\.").Replace("*", "(.*?)")}$";
+                        invoker = invokers.FirstOrDefault(i => Regex.IsMatch(i.Key, pattern)).Value;
+
+                        if (invoker is not null)
+                            break;
+                    }
+                }
+                else
+                {
+                    wildcards = invokers.Keys.Where(key => key.EndsWith('>')).ToList();
+                    foreach (var wildcard in wildcards)
+                    {
+                        invoker = invokers.FirstOrDefault(i => i.Key.StartsWith(wildcard)).Value;
+                        if (invoker is not null)
+                            break;
+                    }
+                }
+            }
+
+
+            if (invoker is null)
+            {
                 Console.WriteLine($"No invoker found for {subject}");
                 await messageContext.Signal(AckSignal.DeadLetter, cancellationToken);
-                continue; 
+                continue;
             }
 
             // messageType is currently set by the sub provider
@@ -92,7 +128,7 @@ public class ChannelBackedHub : IMessageHub
     public async Task Stop()
     {
         messageChannel.Writer.Complete();
-        await Task.WhenAll(workerTasks); 
+        await Task.WhenAll(workerTasks);
     }
 
     private Task<AckSignal> InnerHandle(MessageContext messageContext, CancellationToken cancellationToken)
@@ -122,7 +158,7 @@ public class ChannelBackedHub : IMessageHub
 
         if (!added)
             Console.WriteLine("Pa Pa! The invoker wasn't added!");
-        
+
         subscriptions.Add(subContext);
 
         return Task.CompletedTask;
@@ -139,10 +175,10 @@ public class ChannelBackedHub : IMessageHub
             subContext.SubjectMapping.Subject,
             new EndpointInvoker(handler)
         );
-        
+
         if (!added)
             Console.WriteLine("Pa Pa! The invoker wasn't added!");
-        
+
         subscriptions.Add(subContext);
 
         return Task.CompletedTask;

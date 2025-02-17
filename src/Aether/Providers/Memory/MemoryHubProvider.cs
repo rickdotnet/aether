@@ -38,15 +38,9 @@ public class MemoryHubProvider : ISubscriptionProvider, IPublisherProvider
         CancellationToken cancellationToken)
     {
         var subjectKey = DefaultSubjectTypeMapper.From(publishConfig).Subject;
-        if (!subscriptions.TryGetValue(subjectKey, out var subscription))
-        {
-            // no handlers for this message type?
-            return;
-        }
-        
         message.Headers[MessageHeader.Subject] = subjectKey;
         
-        var tasks = subscription.Select(
+        var tasks = subscriptions.SelectMany(subs=>subs.Value).Select(
             async sub => { await sub.Writer.WriteAsync(new MessageContext(message), cancellationToken); });
 
         await Task.WhenAll(tasks);

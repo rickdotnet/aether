@@ -6,6 +6,7 @@ public sealed record StorageRegistration
 {
     public string StoreName { get; }
     public Type? ProviderFactoryType { get; }
+    public int? MaxBytes { get; init; }
 
     public StorageRegistration(string storeName, Type providerFactoryType)
     {

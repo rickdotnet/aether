@@ -1,4 +1,5 @@
 ﻿using Aether.Abstractions.Hosting;
+using Aether.Abstractions.Storage;
 using Aether.Providers.NATS.Messaging;
 using Aether.Providers.NATS.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,9 +23,22 @@ public static class Startup
         return hubBuilder;
     }
 
+    public static IStorageBuilder AddNatsStore(this IStorageBuilder storageBuilder)
+        => AddNatsStore(storageBuilder, IDefaultStore.DefaultStoreName);
+
     public static IStorageBuilder AddNatsStore(this IStorageBuilder storageBuilder, string storeName)
     {
-        storageBuilder.AddStore<NatsStoreProvider>(storeName);
+        storageBuilder.AddStore(new StorageRegistration(storeName, typeof(NatsStoreProvider)));
+        return storageBuilder;
+    }
+    
+    public static IStorageBuilder AddNatsStore(this IStorageBuilder storageBuilder, string storeName, int maxBytes)
+    {
+        storageBuilder.AddStore(new StorageRegistration(storeName, typeof(NatsStoreProvider))
+        {
+            MaxBytes = maxBytes
+        });
+        
         return storageBuilder;
     }
 }

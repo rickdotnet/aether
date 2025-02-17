@@ -33,8 +33,7 @@ internal class NatsCoreSubscription : ISubscription
         try
         {
             logger.LogInformation("Subscribing to {Subject}", subjectMapping.Subject);
-            await foreach (var msg in connection.SubscribeAsync<byte[]>(subjectMapping.Subject,
-                               cancellationToken: cancellationToken))
+            await foreach (var msg in connection.SubscribeAsync<byte[]>(subjectMapping.Subject, cancellationToken: cancellationToken))
             {
                 var result = await ProcessMessage(msg);
                 result.OnFailure(error =>

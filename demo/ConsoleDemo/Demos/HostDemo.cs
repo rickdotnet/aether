@@ -35,6 +35,7 @@ public class HostDemo
         var builder = Host.CreateApplicationBuilder();
         builder.Services.AddNatsClient(nats => nats.ConfigureOptions(opts => opts with { Url = "nats://localhost:4222" }));
         builder.Services.AddSingleton<InstanceEndpoint>();
+        builder.Services.AddSingleton<WildCardEndpoint>();
 
 
         // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
@@ -117,7 +118,6 @@ public class HostDemo
 
     private static void Example3(HostApplicationBuilder builder, EndpointConfig durableConfig)
     {
-        builder.Services.AddNatsClient(nats => nats.ConfigureOptions(opts => opts with { Url = "nats://localhost:4222" }));
         builder.Services.AddAether(
             ab =>
             {
@@ -127,11 +127,11 @@ public class HostDemo
                     .AddHub("nats", // named hub for nats
                         hub => hub
                             .UseNats()
-                            .AddEndpoint<InstanceEndpoint>(durableConfig)
+                            .AddEndpoint<WildCardEndpoint>(durableConfig)
                     );
                 ab.Storage
                     .AddMemoryStore("second-store")
-                    .AddNatsStore("distributed");
+                    .AddNatsStore("distributed", 1024*1024);
             });
     }
 }

@@ -97,6 +97,12 @@ public class EndpointInvoker
         // until we swap to using Handle methods, this will
         // only hit on MessageContext, aka the fallback method
         handleMethod = endpointType.GetMethod("Handle", [messageType, typeof(CancellationToken)]);
+        if (handleMethod == null)
+        {
+            messageType = typeof(MessageContext);
+            handleMethod = endpointType.GetMethod("Handle", [messageType, typeof(CancellationToken)]);
+        }
+
         if (handleMethod != null)
         {
             // determine method parameter type

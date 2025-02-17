@@ -38,7 +38,7 @@ internal class HubBuilder : IHubBuilder
         return this;
     }
 
-    public IHubBuilder AddEndpoint(Type endpointType, EndpointConfig endpointConfig)
+    public IHubBuilder AddEndpoint(EndpointConfig endpointConfig, Type endpointType)
     {
         hubRegistration.AddRegistration(endpointType, endpointConfig);
         return this;

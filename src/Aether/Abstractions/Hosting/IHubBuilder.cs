@@ -9,7 +9,7 @@ public interface IHubBuilder
 {
     public IHubBuilder AddEndpoint<T>(EndpointConfig endpointConfig);
 
-    public IHubBuilder AddEndpoint(Type endpointType, EndpointConfig endpointConfig);
+    public IHubBuilder AddEndpoint(EndpointConfig endpointConfig, Type endpointType);
 
     public IHubBuilder AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler);
 
