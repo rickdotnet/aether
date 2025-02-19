@@ -2,6 +2,8 @@ namespace Aether.Abstractions.Messaging;
 
 public interface IPublisher
 {
+    Task Send<TType>(AetherData data, string? action, CancellationToken cancellationToken = default);
+    
     Task Send<TCommand>(TCommand commandMessage, CancellationToken cancellationToken = default)
         where TCommand : ICommand;
 

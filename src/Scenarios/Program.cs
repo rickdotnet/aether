@@ -1,1 +1,4 @@
-﻿Console.WriteLine("New Scenarios Coming Soon!");
+﻿
+using Scenarios;
+
+await Memory.Run();
