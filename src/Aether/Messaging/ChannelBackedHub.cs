@@ -118,7 +118,7 @@ public class ChannelBackedHub : IMessageHub
                 // to Handle(MessageContext, CancellationToken)
                 var messageType = messageContext.Message.MessageType ?? typeof(MessageContext);
                 var invokeResult = await invoker.Invoke(messageType, messageContext, cancellationToken);
-                invokeResult.OnError(s => Console.WriteLine($"Invoke Result: {s}"));
+                invokeResult.OnError(Console.WriteLine);
                 
                 // no need to ack here, since we're auto-acking for now
                 // if (invokeResult)
@@ -126,7 +126,7 @@ public class ChannelBackedHub : IMessageHub
                 return invokeResult;
             });
             
-            processResult.OnError(s => Console.WriteLine($"Process Result: {s}"));
+            processResult.OnError(Console.WriteLine);
         }
     }
 
