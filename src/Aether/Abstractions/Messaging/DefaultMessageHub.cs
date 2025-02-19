@@ -73,4 +73,6 @@ internal class DefaultMessageHub : IDefaultMessageHub
     public IPublisher CreatePublisher(PublishConfig publishConfig)
         => DefaultHub.CreatePublisher(publishConfig);
 
+    public IPublisher CreatePublisher(string subject) => DefaultHub.CreatePublisher(subject);
+
 }

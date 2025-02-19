@@ -40,4 +40,9 @@ public interface IMessageHub
     /// Creates a publisher with the specified publishing configuration.
     /// </summary>
     public IPublisher CreatePublisher(PublishConfig publishConfig);
+    
+    /// <summary>
+    /// Creates a publisher for the specified subject.
+    /// </summary>
+    public IPublisher CreatePublisher(string subject);
 }

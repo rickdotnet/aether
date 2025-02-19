@@ -194,6 +194,8 @@ public class ChannelBackedHub : IMessageHub
 
     public IPublisher CreatePublisher(PublishConfig publishConfig)
         => new DefaultPublisher(publishConfig, publisherProvider);
+
+    public IPublisher CreatePublisher(string subject) => CreatePublisher(new PublishConfig{ Subject = subject});
 }
 
 public enum AckSignal
