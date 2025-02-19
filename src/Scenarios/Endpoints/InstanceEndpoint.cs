@@ -34,6 +34,6 @@ public class InstanceEndpoint : IHandle<SomethingHappenedCommand>, IReplyTo<Memo
     public Task<string> Handle(Memory.TestRequest message, MessageContext context, CancellationToken cancellationToken = default)
     {
         Console.WriteLine("Instance Endpoint - TestRequest - Normal");
-        return Task.FromResult("Success");
+        return Task.FromResult("Success From Instance Endpoint");
     }
 }

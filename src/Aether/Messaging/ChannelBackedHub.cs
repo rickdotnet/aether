@@ -8,17 +8,18 @@ using RickDotNet.Extensions.Base;
 
 namespace Aether.Messaging;
 
-public class ChannelBackedHub : IMessageHub
+public class ChannelBackedHub : IMessageHub, IAsyncDisposable
 {
     private readonly Channel<MessageContext> messageChannel;
     private readonly ISubscriptionProvider subProvider;
     private readonly IPublisherProvider publisherProvider;
     private readonly List<Task> workerTasks = new();
-    private readonly List<SubscriptionContext> subscriptions = new();
+    private readonly List<SubscriptionContext> subscriptionContexts = new();
     private readonly ConcurrentDictionary<string, EndpointInvoker> invokers = new();
     private readonly int maxWorkers;
     private readonly IEndpointProvider? endpointProvider;
     private CancellationTokenSource? cts;
+    private readonly List<ISubscription> subscriptions = new();
 
     public ChannelBackedHub(
         ISubscriptionProvider subProvider,
@@ -45,10 +46,11 @@ public class ChannelBackedHub : IMessageHub
         for (var i = 0; i < maxWorkers; i++)
             workerTasks.Add(Task.Run(() => ProcessMessagesAsync(cts.Token), cts.Token)); // do we want the second token?
 
-        foreach (var subscription in subscriptions)
+        foreach (var subscription in subscriptionContexts)
         {
             var sub = subProvider.AddSubscription(subscription);
-            _ = sub.Subscribe(cancellationToken);
+            subscriptions.Add(sub);
+            sub.Subscribe(cancellationToken);
         }
 
         return Task.CompletedTask;
@@ -118,13 +120,13 @@ public class ChannelBackedHub : IMessageHub
                 // to Handle(MessageContext, CancellationToken)
                 var messageType = messageContext.Message.MessageType ?? typeof(MessageContext);
                 var invokeResult = await invoker.Invoke(messageType, messageContext, cancellationToken);
-                
+
                 // no need to ack here, since we're auto-acking for now
                 // if (invokeResult)
                 //await messageContext.Signal(AckSignal.Ack, cancellationToken);
                 return invokeResult;
             });
-            
+
             processResult.OnError(Console.WriteLine);
         }
     }
@@ -163,7 +165,7 @@ public class ChannelBackedHub : IMessageHub
         if (!added)
             Console.WriteLine("Pa Pa! The invoker wasn't added!");
 
-        subscriptions.Add(subContext);
+        subscriptionContexts.Add(subContext);
 
         return Task.CompletedTask;
     }
@@ -183,7 +185,7 @@ public class ChannelBackedHub : IMessageHub
         if (!added)
             Console.WriteLine("Pa Pa! The invoker wasn't added!");
 
-        subscriptions.Add(subContext);
+        subscriptionContexts.Add(subContext);
 
         return Task.CompletedTask;
     }
@@ -194,7 +196,18 @@ public class ChannelBackedHub : IMessageHub
     public IPublisher CreatePublisher(PublishConfig publishConfig)
         => new DefaultPublisher(publishConfig, publisherProvider);
 
-    public IPublisher CreatePublisher(string subject) => CreatePublisher(new PublishConfig{ Subject = subject});
+    public IPublisher CreatePublisher(string subject) => CreatePublisher(new PublishConfig { Subject = subject });
+
+    public async ValueTask DisposeAsync()
+    {
+        if (cts is IAsyncDisposable ctsAsyncDisposable)
+            await ctsAsyncDisposable.DisposeAsync();
+        else if (cts != null)
+            cts.Dispose();
+
+        var disposeTasks = subscriptions.Select(sub => sub.DisposeAsync().AsTask()).ToList();
+        await Task.WhenAll(disposeTasks);
+    }
 }
 
 public enum AckSignal

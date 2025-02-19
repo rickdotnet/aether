@@ -104,7 +104,4 @@ public class MemoryHubProvider : ISubscriptionProvider, IPublisherProvider
             return tcs.Task.Result;
         }
     }
-
-    private static bool IsRequest(Type? type)
-        => type?.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequest<>)) is true;
 }

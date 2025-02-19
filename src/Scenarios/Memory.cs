@@ -1,5 +1,6 @@
 using Aether;
 using Aether.Abstractions.Messaging;
+using RickDotNet.Extensions.Base;
 using Scenarios.Endpoints;
 
 namespace Scenarios;
@@ -44,7 +45,7 @@ public class Memory
             new TestRequest("test"),
             cancellationToken: CancellationToken.None);
 
-        Console.WriteLine(result1);
+        Console.WriteLine(result1.ValueOrDefault()?.As<string>());
         Console.WriteLine(result2);
         await Task.Delay(1000);
     }
