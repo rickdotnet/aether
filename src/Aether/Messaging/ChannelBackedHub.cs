@@ -44,7 +44,18 @@ public class ChannelBackedHub : IMessageHub, IAsyncDisposable
         cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         for (var i = 0; i < maxWorkers; i++)
-            workerTasks.Add(Task.Run(() => ProcessMessagesAsync(cts.Token), cts.Token)); // do we want the second token?
+            workerTasks.Add(Task.Run(async () =>
+            {
+                try
+                {
+                    await ProcessMessagesAsync(cts.Token)!;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error processing messages: {ex.Message}");
+                }
+                
+            }, cts.Token)); // do we want the second token?
 
         foreach (var subscription in subscriptionContexts)
         {
@@ -56,7 +67,7 @@ public class ChannelBackedHub : IMessageHub, IAsyncDisposable
         return Task.CompletedTask;
     }
 
-    private async Task? ProcessMessagesAsync(CancellationToken cancellationToken)
+    private async Task ProcessMessagesAsync(CancellationToken cancellationToken)
     {
         await foreach (var messageContext in messageChannel.Reader.ReadAllAsync(cancellationToken))
         {
