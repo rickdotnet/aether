@@ -10,15 +10,16 @@ public class MemoryHubProvider : ISubscriptionProvider, IPublisherProvider
     private readonly SubscriptionOptions? defaultSubscriptionOptions;
     private readonly ConcurrentDictionary<string, List<MemorySubscription>> subscriptions = new();
     private readonly TimeSpan requestTimeout = TimeSpan.FromSeconds(30);
-    
+
     public MemoryHubProvider()
     {
     }
+
     internal MemoryHubProvider(SubscriptionOptions? defaultSubscriptionOptions = null)
     {
         this.defaultSubscriptionOptions = defaultSubscriptionOptions;
     }
-    
+
     public ISubscription AddSubscription(SubscriptionContext context)
     {
         var sub = new MemorySubscription(context.Handler, defaultSubscriptionOptions);
@@ -30,7 +31,7 @@ public class MemoryHubProvider : ISubscriptionProvider, IPublisherProvider
 
         subscriptions[subjectKey].Add(sub);
         sub.OnDispose(() => subscriptions[subjectKey].Remove(sub));
-        
+
         return sub;
     }
 
@@ -39,24 +40,44 @@ public class MemoryHubProvider : ISubscriptionProvider, IPublisherProvider
     {
         var subjectKey = DefaultSubjectTypeMapper.From(publishConfig).Subject;
         message.Headers[MessageHeader.Subject] = subjectKey;
-        
-        var tasks = subscriptions.SelectMany(subs=>subs.Value).Select(
-            async sub => { await sub.Writer.WriteAsync(new MessageContext(message), cancellationToken); });
+
+        List<Task> tasks;
+        if (subscriptions.TryGetValue(subjectKey, out var subscription))
+        {
+            tasks = subscription
+                .Select(async sub => { await sub.Writer.WriteAsync(new MessageContext(message), cancellationToken); })
+                .ToList();
+        }
+        else
+        {
+            tasks = subscriptions
+                .Where(x => x.Key.Contains('*') || x.Key.EndsWith('>'))
+                .SelectMany(subs => subs.Value).Select(
+                    async sub => { await sub.Writer.WriteAsync(new MessageContext(message), cancellationToken); }
+                ).ToList();
+
+            if (tasks.Count == 0)
+            {
+                // no handlers for this message type?
+                return;
+            }
+        }
 
         await Task.WhenAll(tasks);
     }
 
-    public async Task<byte[]> Request(PublishConfig publishConfig, AetherMessage message,
-        CancellationToken cancellationToken)
+    public async Task<byte[]> Request(PublishConfig publishConfig, AetherMessage message, CancellationToken cancellationToken)
     {
         var subjectKey = DefaultSubjectTypeMapper.From(publishConfig).Subject;
+        message.Headers[MessageHeader.Subject] = subjectKey;
+        
         if (!subscriptions.TryGetValue(subjectKey, out var subscription))
             throw new InvalidOperationException("No handlers for this message type");
 
         var sub = subscription.First();
 
         var tcs = new TaskCompletionSource<byte[]>();
-        var replyFunc = IsRequest(message.MessageType)
+        var replyFunc = message.IsRequest
             ? new Func<byte[], CancellationToken, Task>(
                 (response, _) =>
                 {

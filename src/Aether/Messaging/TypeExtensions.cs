@@ -18,13 +18,4 @@ internal static class TypeExtensions
             .Select(i => i.GetGenericArguments()[0])
             .ToArray();
     }
-    public static bool IsRequestHandler(this Type handlerType)
-    {
-        return handlerType.IsGenericType && handlerType.GetGenericTypeDefinition() == typeof(IReplyTo<,>);
-    }
-    
-    public static bool IsRequest(this Type type)
-    {
-        return type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequest<>));
-    }
 }

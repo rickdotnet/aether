@@ -30,46 +30,52 @@ public class EndpointInvoker
         MessageContext context,
         CancellationToken cancellationToken)
     {
-        if (IsHandler)
+        try
         {
-            var handlerResult = await Result.TryAsync(() => handler!(context, cancellationToken));
-            return handlerResult;
+            if (IsHandler)
+            {
+                var handlerResult = await Result.TryAsync(() => handler!(context, cancellationToken));
+                return handlerResult;
+            }
+
+            if (endpointType is null)
+                return Result.Failure("No endpoint type");
+
+            // TODO: I know this is funky, it will get cleaned up
+            //            that's what comments are for. Shoutout bitm0de.
+            var endpointInstanceResult = Result.Try(() => endpointProvider!.GetService(endpointType));
+            var errorMessage = "";
+            endpointInstanceResult.OnError(error => errorMessage = error);
+
+            var endpointInstance = endpointInstanceResult.ValueOrDefault();
+            if (endpointInstance is null)
+                return Result.Failure(errorMessage);
+
+            var endpointMethod = GetEndpointMethod(messageType);
+            if (endpointMethod is null)
+                return Result.Failure("No endpoint method");
+
+            if (context.Message.IsRequest && endpointMethod.HasReturnType)
+            {
+                if (!context.ReplyAvailable)
+                    return Result.Failure("No reply available");
+
+                var response =
+                    await (dynamic)endpointMethod.Invoke(endpointInstance, context, cancellationToken);
+
+                var data = AetherData.Serialize(response);
+                return await context.Reply(data, cancellationToken);
+            }
+
+            var endpointResult =
+                await Result.TryAsync(() => endpointMethod.Invoke(endpointInstance, context, cancellationToken));
+
+            return endpointResult;
         }
-
-        if (endpointType is null)
-            return Result.Failure("No endpoint type");
-
-        // TODO: I know this is funky, it will get cleaned up
-        //            that's what comments are for. Shoutout bitm0de.
-        var endpointInstanceResult = Result.Try(() => endpointProvider!.GetService(endpointType));
-        var errorMessage = "";
-        endpointInstanceResult.OnError(error => errorMessage = error);
-
-        var endpointInstance = endpointInstanceResult.ValueOrDefault();
-        if (endpointInstance is null)
-            return Result.Failure(errorMessage);
-
-        var endpointMethod = GetEndpointMethod(messageType);
-        if (endpointMethod is null)
-            return Result.Failure("No endpoint method");
-
-        var isRequest = messageType.IsRequest();
-
-        if (isRequest)
+        catch (Exception ex)
         {
-            if (!context.ReplyAvailable)
-                return Result.Failure("No reply available");
-
-            var response =
-                await (dynamic)endpointMethod.Invoke(endpointInstance, context, cancellationToken);
-
-            var data = AetherData.Serialize(response);
-            return await context.Reply(data, cancellationToken);
+            return ex;
         }
-
-        var endpointResult =
-            await Result.TryAsync(() => endpointMethod.Invoke(endpointInstance, context, cancellationToken));
-        return endpointResult;
     }
 
     private EndpointMethod? GetEndpointMethod(Type messageType)
@@ -128,11 +134,13 @@ public class EndpointInvoker
 
         endpointMethod = new EndpointMethod(handleMethod, MethodType.MessageTypeAndMessageContext);
         handleMethods[messageType] = endpointMethod;
+
         return endpointMethod;
     }
 
     private record EndpointMethod
     {
+        public bool HasReturnType => MethodInfo.ReturnType.GetGenericArguments().Length > 0;
         private MethodInfo MethodInfo { get; }
         private MethodType MethodType { get; }
 

@@ -23,14 +23,15 @@ public class AetherClient : IAetherClient
         Storage = storage;
     }
 
-    private static AetherClient CreateMemoryClient()
+    public static AetherClient CreateMemoryClient(IEndpointProvider? endpointProvider = null)
     {
         var inMemoryProvider = new MemoryHubProvider();
         var inMemoryStore = new MemoryStore();
 
         var syncHub = new ChannelBackedHub(
             subProvider: inMemoryProvider,
-            publisherProvider: inMemoryProvider
+            publisherProvider: inMemoryProvider,
+            endpointProvider: endpointProvider
         );
 
         return new AetherClient(

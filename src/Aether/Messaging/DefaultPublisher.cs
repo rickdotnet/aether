@@ -2,6 +2,7 @@ using System.Text.Json;
 using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Microsoft.Extensions.Primitives;
+using RickDotNet.Base;
 
 namespace Aether.Messaging;
 
@@ -19,21 +20,52 @@ internal class DefaultPublisher : IPublisher
     public Task Send<TCommand>(TCommand commandMessage, CancellationToken cancellationToken) where TCommand : ICommand
         => PublishInternal(commandMessage, nameof(Send), cancellationToken);
 
-    public Task Send<TType>(AetherData data, string? action, CancellationToken cancellationToken = default)
-        => PublishInternal<TType>(data, action, CancellationToken.None);
+    public Task Send<TType>(AetherData data, CancellationToken cancellationToken = default)
+        => PublishInternal<TType>(data, nameof(Send), cancellationToken);
 
     public Task Broadcast<TEvent>(TEvent eventMessage, CancellationToken cancellationToken) where TEvent : IEvent
         => PublishInternal(eventMessage, nameof(Broadcast), cancellationToken);
 
-    public async Task<TResponse?> Request<TRequest, TResponse>(TRequest requestMessage, CancellationToken cancellationToken) where TRequest : IRequest<TResponse>
+    public Task Broadcast<TType>(AetherData data, CancellationToken cancellationToken = default)
+        => PublishInternal<TType>(data, nameof(Broadcast), cancellationToken);
+
+    public Task<Result<AetherData>> Request<T>(T requestMessage, CancellationToken cancellationToken)
+    {
+        var data = AetherData.Serialize(requestMessage);
+        return Request<T>(data, cancellationToken);
+    }
+
+    public async Task<Result<AetherData>> Request<TType>(AetherData requestData, CancellationToken cancellationToken)
     {
         var subject = DefaultSubjectTypeMapper.From(publishConfig);
         var aetherMessage = CreateMessage(
-            requestMessage,
+            requestData,
+            typeof(TType),
             subject,
             action: nameof(Request)
         );
 
+        aetherMessage.SetResponseTypeHeaders<AetherData>();
+
+        var bytes = await providerPublisher.Request(publishConfig, aetherMessage, cancellationToken);
+        return new AetherData(bytes);
+    }
+
+    public Task<TResponse?> Request<TRequest, TResponse>(TRequest requestMessage, CancellationToken cancellationToken) where TRequest : IRequest<TResponse>
+    {
+        var data = AetherData.Serialize(requestMessage);
+        return Request<TRequest, TResponse>(data, cancellationToken);
+    }
+
+    public async Task<TResponse?> Request<TType, TResponse>(AetherData requestData, CancellationToken cancellationToken)
+    {
+        var subject = DefaultSubjectTypeMapper.From(publishConfig);
+        var aetherMessage = CreateMessage(
+            requestData,
+            typeof(TType),
+            subject,
+            action: nameof(Request)
+        );
         aetherMessage.SetResponseTypeHeaders<TResponse>();
 
         var response = await providerPublisher.Request(publishConfig, aetherMessage, cancellationToken);
@@ -58,14 +90,6 @@ internal class DefaultPublisher : IPublisher
 
         return providerPublisher.Publish(publishConfig, aetherMessage, cancellationToken);
     }
-
-    private static AetherMessage CreateMessage<T>(T message, SubjectTypeMapping subjectMapping, string? action) where T : IMessage
-        => CreateMessage(
-            AetherData.Serialize(message),
-            typeof(T),
-            subjectMapping,
-            action
-        );
 
     private static AetherMessage CreateMessage(AetherData data, Type dataType, SubjectTypeMapping subjectMapping, string? action)
     {

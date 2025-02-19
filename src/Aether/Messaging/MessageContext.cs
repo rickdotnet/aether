@@ -24,7 +24,7 @@ public class MessageContext
         Headers = Message.Headers.AsReadOnly();
     }
 
-    public Task<Result<VoidResult>> Reply(byte[] response, CancellationToken cancellationToken)
+    public Task<Result<VoidResult>> Reply(AetherData response, CancellationToken cancellationToken)
         => Task.FromResult(
             ReplyAvailable
                 ? Result.Try(() => { ReplyFunc!(response, cancellationToken); })
