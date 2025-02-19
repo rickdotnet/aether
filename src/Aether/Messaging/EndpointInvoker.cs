@@ -41,15 +41,9 @@ public class EndpointInvoker
             if (endpointType is null)
                 return Result.Failure("No endpoint type");
 
-            // TODO: I know this is funky, it will get cleaned up
-            //            that's what comments are for. Shoutout bitm0de.
-            var endpointInstanceResult = Result.Try(() => endpointProvider!.GetService(endpointType));
-            var errorMessage = "";
-            endpointInstanceResult.OnError(error => errorMessage = error);
-
-            var endpointInstance = endpointInstanceResult.ValueOrDefault();
+            var endpointInstance = endpointProvider!.GetService(endpointType);
             if (endpointInstance is null)
-                return Result.Failure(errorMessage);
+                return Result.Failure("No endpoint instance available");
 
             var endpointMethod = GetEndpointMethod(messageType);
             if (endpointMethod is null)
