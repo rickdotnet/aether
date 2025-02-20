@@ -138,7 +138,12 @@ public class ChannelBackedHub : IMessageHub, IAsyncDisposable
                 return invokeResult;
             });
 
-            processResult.OnError(Console.WriteLine);
+            processResult.OnError(s =>
+            {
+                Console.WriteLine(s);
+                if(messageContext.ReplyAvailable)
+                    messageContext.Reply(AetherData.Empty, cancellationToken);
+            });
         }
     }
 

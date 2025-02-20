@@ -47,8 +47,7 @@ internal class DefaultPublisher : IPublisher
 
         aetherMessage.SetResponseTypeHeaders<AetherData>();
 
-        var bytes = await providerPublisher.Request(publishConfig, aetherMessage, cancellationToken);
-        return new AetherData(bytes);
+        return await providerPublisher.Request(publishConfig, aetherMessage, cancellationToken);
     }
 
     public Task<TResponse?> Request<TRequest, TResponse>(TRequest requestMessage, CancellationToken cancellationToken) where TRequest : IRequest<TResponse>
@@ -69,7 +68,7 @@ internal class DefaultPublisher : IPublisher
         aetherMessage.SetResponseTypeHeaders<TResponse>();
 
         var response = await providerPublisher.Request(publishConfig, aetherMessage, cancellationToken);
-        return JsonSerializer.Deserialize<TResponse>(response);
+        return response.As<TResponse?>();
     }
 
     private Task PublishInternal<TMessage>(TMessage message, string action, CancellationToken cancellationToken) where TMessage : IMessage

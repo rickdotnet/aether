@@ -11,10 +11,10 @@ public class MessageContext
     internal AetherMessage Message { get; }
     public bool ReplyAvailable => ReplyFunc is not null;
     public bool SignalAvailable => SignalFunc is not null;
-    private Func<byte[], CancellationToken, Task>? ReplyFunc { get; }
+    private Func<AetherData, CancellationToken, Task>? ReplyFunc { get; }
     public Func<AckSignal, CancellationToken, Task>? SignalFunc { get; }
 
-    public MessageContext(AetherMessage message, Func<byte[], CancellationToken, Task>? replyFunc = null,
+    public MessageContext(AetherMessage message, Func<AetherData, CancellationToken, Task>? replyFunc = null,
         Func<AckSignal, CancellationToken, Task>? signalFunc = null)
     {
         Message = message;

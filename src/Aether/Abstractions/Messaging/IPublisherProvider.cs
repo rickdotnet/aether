@@ -6,5 +6,5 @@ public interface IPublisherProvider
 {
     Task Publish(PublishConfig publishConfig, AetherMessage message, CancellationToken cancellationToken);
     
-    Task<byte[]> Request(PublishConfig publishConfig, AetherMessage message, CancellationToken cancellationToken);
+    Task<AetherData> Request(PublishConfig publishConfig, AetherMessage message, CancellationToken cancellationToken);
 }

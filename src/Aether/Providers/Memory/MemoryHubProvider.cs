@@ -66,7 +66,7 @@ public class MemoryHubProvider : ISubscriptionProvider, IPublisherProvider
         await Task.WhenAll(tasks);
     }
 
-    public async Task<byte[]> Request(PublishConfig publishConfig, AetherMessage message, CancellationToken cancellationToken)
+    public async Task<AetherData> Request(PublishConfig publishConfig, AetherMessage message, CancellationToken cancellationToken)
     {
         var subjectKey = DefaultSubjectTypeMapper.From(publishConfig).Subject;
         message.Headers[MessageHeader.Subject] = subjectKey;
@@ -76,9 +76,9 @@ public class MemoryHubProvider : ISubscriptionProvider, IPublisherProvider
 
         var sub = subscription.First();
 
-        var tcs = new TaskCompletionSource<byte[]>();
+        var tcs = new TaskCompletionSource<AetherData>();
         var replyFunc = message.IsRequest
-            ? new Func<byte[], CancellationToken, Task>(
+            ? new Func<AetherData, CancellationToken, Task>(
                 (response, _) =>
                 {
                     tcs.TrySetResult(response);

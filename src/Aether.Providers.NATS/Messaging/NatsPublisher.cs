@@ -29,7 +29,7 @@ public class NatsPublisher : IPublisherProvider
             cancellationToken: cancellationToken).AsTask();
     }
 
-    public async Task<byte[]> Request(
+    public async Task<AetherData> Request(
         PublishConfig publishConfig,
         AetherMessage message,
         CancellationToken cancellationToken)

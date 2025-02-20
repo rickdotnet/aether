@@ -90,7 +90,7 @@ internal class NatsJetStreamSubscription : ISubscription
             }
 
             var replyFunc = natsMsg.ReplyTo != null
-                ? new Func<byte[], CancellationToken, Task>((response, innerCancel) =>
+                ? new Func<AetherData, CancellationToken, Task>((response, innerCancel) =>
                     connection.PublishAsync(natsMsg.ReplyTo, response, cancellationToken: innerCancel).AsTask()
                 )
                 : null;

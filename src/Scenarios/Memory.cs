@@ -16,6 +16,7 @@ public class Memory
 
         await client.Messaging.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle);
         await client.Messaging.AddEndpoint<InstanceEndpoint>(InstanceEndpoint.EndpointConfig);
+        await client.Messaging.AddEndpoint<SecondEndpoint>(SecondEndpoint.EndpointConfig);
 
         // new
         await client.Messaging.Start(CancellationToken.None);
@@ -23,6 +24,7 @@ public class Memory
         // send a message - in process or out of process
         var staticPublisher = client.Messaging.CreatePublisher(StaticEndpoint.EndpointConfig);
         var instancePublisher = client.Messaging.CreatePublisher(InstanceEndpoint.EndpointConfig);
+        var secondPublisher = client.Messaging.CreatePublisher(SecondEndpoint.EndpointConfig);
 
         await staticPublisher.Send(somethingHappened);
         await instancePublisher.Send(somethingHappened);
@@ -36,17 +38,19 @@ public class Memory
         var data = AetherData.Serialize(somethingHappened);
         await staticPublisher.Send<SomethingHappenedCommand>(data);
         await instancePublisher.Send<SomethingHappenedCommand>(data);
+        await secondPublisher.Send<SomethingHappenedCommand>(data);
 
         var result1 = await instancePublisher.Request<string>(AetherData.Serialize("test"), CancellationToken.None);
-         if (result1)
-             Console.WriteLine("Success");
+        var result2 = await instancePublisher.Request<TestRequest, string>(new TestRequest("test"), cancellationToken: CancellationToken.None);
+        var result3 = await secondPublisher.Request<TestRequest, string>(new TestRequest("test"), cancellationToken: CancellationToken.None);
+        var result4 = await secondPublisher.Request<TestRequest, string>(new TestRequest("test"), cancellationToken: CancellationToken.None);
 
-        var result2 = await instancePublisher.Request<TestRequest,string>(
-            new TestRequest("test"),
-            cancellationToken: CancellationToken.None);
-
-        Console.WriteLine(result1.ValueOrDefault()?.As<string>());
-        Console.WriteLine(result2);
+        Console.WriteLine(result1.ValueOrDefault()?.As<string>() ?? "null");
+        Console.WriteLine(result2 ?? "null");
+        
+        Console.WriteLine(result3);
+        Console.WriteLine(result4);
+        
         await Task.Delay(1000);
     }
 
@@ -55,9 +59,15 @@ public class Memory
     class GenericEndpointProvider : IEndpointProvider
     {
         private static InstanceEndpoint instanceEndpoint = new();
+        private static SecondEndpoint secondEndpoint = new();
 
-        public object? GetService(Type endpointType) => instanceEndpoint;
+        public object? GetService(Type endpointType) => endpointType switch
+        {
+            _ when endpointType == typeof(InstanceEndpoint) => instanceEndpoint,
+            _ when endpointType == typeof(SecondEndpoint) => secondEndpoint,
+            _ => null
+        };
 
-        public T? GetService<T>() => default;
+        public T? GetService<T>() => (T?)GetService(typeof(T));
     }
 }
