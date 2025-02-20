@@ -9,7 +9,7 @@ public class MessageContext
     public IReadOnlyDictionary<string, StringValues> Headers { get; }
     public AetherData Data => Message.Data ?? AetherData.Empty;
     internal AetherMessage Message { get; }
-    
+
     private bool replyCalled;
     public bool ReplyAvailable => !replyCalled && ReplyFunc is not null;
 
@@ -27,17 +27,14 @@ public class MessageContext
         Headers = Message.Headers.AsReadOnly();
     }
 
-    public Task<Result<VoidResult>> Reply(AetherData response, CancellationToken cancellationToken)
+    public async Task<Result<VoidResult>> Reply(AetherData response, CancellationToken cancellationToken)
     {
-        return Task.FromResult(
-            ReplyAvailable
-                ? Result.Try(() =>
-                {
-                    replyCalled = false;
-                    ReplyFunc!(response, cancellationToken);
-                })
-                : Result.Failure<VoidResult>("No reply function available")
-        );
+        replyCalled = true;
+        
+        if (!ReplyAvailable)
+            return Result.Failure<VoidResult>("No reply function available");
+        
+        return await Result.TryAsync(() => ReplyFunc!(response, cancellationToken));
     }
 
     public Task<Result<VoidResult>> Signal(AckSignal signal, CancellationToken cancellationToken)
