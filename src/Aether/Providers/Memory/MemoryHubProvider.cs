@@ -68,40 +68,44 @@ public class MemoryHubProvider : ISubscriptionProvider, IPublisherProvider
 
     public async Task<AetherData> Request(PublishConfig publishConfig, AetherMessage message, CancellationToken cancellationToken)
     {
+        // TODO: will clean up exception handling
+        if (!message.IsRequest)
+            throw new InvalidOperationException("This method can only be used to send requests");
+
         var subjectKey = DefaultSubjectTypeMapper.From(publishConfig).Subject;
         message.Headers[MessageHeader.Subject] = subjectKey;
-        
+
         if (!subscriptions.TryGetValue(subjectKey, out var subscription))
             throw new InvalidOperationException("No handlers for this message type");
 
         var sub = subscription.First();
 
         var tcs = new TaskCompletionSource<AetherData>();
-        var replyFunc = message.IsRequest
-            ? new Func<AetherData, CancellationToken, Task>(
-                (response, _) =>
-                {
-                    tcs.TrySetResult(response);
-                    return Task.CompletedTask;
-                }
-            )
-            : null;
+        Func<AetherData, CancellationToken, Task> replyFunc = (response, _) =>
+        {
+            tcs.TrySetResult(response);
+            return Task.CompletedTask;
+        };
 
         await using (cancellationToken.Register(() => tcs.TrySetCanceled()))
         {
-            await sub.Writer.WriteAsync(new MessageContext(message, replyFunc), cancellationToken);
-
-            var timeoutTask = Task.Delay(requestTimeout, cancellationToken);
-            var completedTask = await Task.WhenAny(tcs.Task, timeoutTask).ConfigureAwait(false);
-
-            if (completedTask == timeoutTask)
+            await using (cancellationToken.Register(() => tcs.TrySetCanceled()))
             {
+                var context = new MessageContext(message, replyFunc);
+                await sub.Writer.WriteAsync(context, cancellationToken);
+
+                if (!context.ReplyAvailable)
+                    return AetherData.Empty;
+
+                var timeoutTask = Task.Delay(requestTimeout, cancellationToken);
+                var completedTask = await Task.WhenAny(tcs.Task, timeoutTask).ConfigureAwait(false);
+
+                if (completedTask != timeoutTask)
+                    return tcs.Task.Result;
+
                 tcs.TrySetCanceled(cancellationToken);
                 throw new TimeoutException("The request timed out.");
             }
-
-            // tcs.Task is completed above
-            return tcs.Task.Result;
         }
     }
 }

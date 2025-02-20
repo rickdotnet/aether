@@ -11,7 +11,7 @@ public class MessageContext
     internal AetherMessage Message { get; }
 
     private bool replyCalled;
-    public bool ReplyAvailable => !replyCalled && ReplyFunc is not null;
+    public bool ReplyAvailable => !replyCalled && Message.IsRequest;
 
     public bool SignalAvailable => SignalFunc is not null;
     private Func<AetherData, CancellationToken, Task>? ReplyFunc { get; }
@@ -27,14 +27,14 @@ public class MessageContext
         Headers = Message.Headers.AsReadOnly();
     }
 
-    public async Task<Result<VoidResult>> Reply(AetherData response, CancellationToken cancellationToken)
+    public Task<Result<VoidResult>> Reply(AetherData response, CancellationToken cancellationToken)
     {
-        replyCalled = true;
-        
         if (!ReplyAvailable)
-            return Result.Failure<VoidResult>("No reply function available");
-        
-        return await Result.TryAsync(() => ReplyFunc!(response, cancellationToken));
+            return Task.FromResult(Result.Failure<VoidResult>("Reply function not available"));
+
+        replyCalled = true;
+        return Task.FromResult(Result.Try(() => { ReplyFunc!(response, cancellationToken); }));
+
     }
 
     public Task<Result<VoidResult>> Signal(AckSignal signal, CancellationToken cancellationToken)
