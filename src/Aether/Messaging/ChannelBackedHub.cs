@@ -54,7 +54,6 @@ public class ChannelBackedHub : IMessageHub, IAsyncDisposable
                 {
                     Console.WriteLine($"Error processing messages: {ex.Message}");
                 }
-                
             }, cts.Token)); // do we want the second token?
 
         foreach (var subscription in subscriptionContexts)
@@ -138,12 +137,14 @@ public class ChannelBackedHub : IMessageHub, IAsyncDisposable
                 return invokeResult;
             });
 
-            processResult.OnError(s =>
+            processResult.OnError(Console.WriteLine);
+
+            if (messageContext.ReplyAvailable)
             {
-                Console.WriteLine(s);
-                if(messageContext.ReplyAvailable)
-                    messageContext.Reply(AetherData.Empty, cancellationToken);
-            });
+                Console.WriteLine("Invoker didn't reply, sending empty response");
+                var replyResult = await messageContext.Reply(AetherData.Empty, cancellationToken);
+                replyResult.OnError(Console.WriteLine);
+            }
         }
     }
 

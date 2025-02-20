@@ -96,7 +96,7 @@ internal sealed class AetherBackgroundService : BackgroundService, IAsyncDisposa
             // register all endpoints for the hub
             foreach (var endpointRegistration in hubRegistration.EndpointRegistrations)
             {
-                var endpointName = endpointRegistration.Config.EndpointName;
+                var endpointName = endpointRegistration.Config.EndpointName ?? endpointRegistration.Config.Subject;
 
                 // an endpoint must have a type or a handler
                 var validRegistration = endpointRegistration.Validate();
