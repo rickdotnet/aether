@@ -1,8 +1,8 @@
-using System.Text.Json;
 using Aether.Abstractions.Messaging;
 using Aether.Abstractions.Messaging.Configuration;
 using Microsoft.Extensions.Primitives;
 using RickDotNet.Base;
+using RickDotNet.Extensions.Base;
 
 namespace Aether.Messaging;
 
@@ -29,46 +29,20 @@ internal class DefaultPublisher : IPublisher
     public Task Broadcast<TType>(AetherData data, CancellationToken cancellationToken = default)
         => PublishInternal<TType>(data, nameof(Broadcast), cancellationToken);
 
-    public Task<Result<AetherData>> Request<T>(T requestMessage, CancellationToken cancellationToken)
+    public Task<Result<AetherData>> Request<TRequest>(TRequest requestMessage, CancellationToken cancellationToken)
+        => Request<TRequest>(AetherData.Serialize(requestMessage), cancellationToken);
+
+    public Task<Result<AetherData>> Request<TRequest>(AetherData requestData, CancellationToken cancellationToken)
+        => RequestInternal<TRequest, AetherData>(requestData, cancellationToken);
+
+    public Task<TResponse?> Request<TRequest, TResponse>(TRequest requestMessage, CancellationToken cancellationToken) where TRequest : IRequest<TResponse> 
+        => Request<TRequest, TResponse>(AetherData.Serialize(requestMessage), cancellationToken);
+
+    public async Task<TResponse?> Request<TRequest, TResponse>(AetherData requestData, CancellationToken cancellationToken)
     {
-        var data = AetherData.Serialize(requestMessage);
-        return Request<T>(data, cancellationToken);
-    }
-
-    public async Task<Result<AetherData>> Request<TType>(AetherData requestData, CancellationToken cancellationToken)
-    {
-        var subject = DefaultSubjectTypeMapper.From(publishConfig);
-        var aetherMessage = CreateMessage(
-            requestData,
-            typeof(TType),
-            subject,
-            action: nameof(Request)
-        );
-
-        aetherMessage.SetResponseTypeHeaders<AetherData>();
-
-        return await providerPublisher.Request(publishConfig, aetherMessage, cancellationToken);
-    }
-
-    public Task<TResponse?> Request<TRequest, TResponse>(TRequest requestMessage, CancellationToken cancellationToken) where TRequest : IRequest<TResponse>
-    {
-        var data = AetherData.Serialize(requestMessage);
-        return Request<TRequest, TResponse>(data, cancellationToken);
-    }
-
-    public async Task<TResponse?> Request<TType, TResponse>(AetherData requestData, CancellationToken cancellationToken)
-    {
-        var subject = DefaultSubjectTypeMapper.From(publishConfig);
-        var aetherMessage = CreateMessage(
-            requestData,
-            typeof(TType),
-            subject,
-            action: nameof(Request)
-        );
-        aetherMessage.SetResponseTypeHeaders<TResponse>();
-
-        var response = await providerPublisher.Request(publishConfig, aetherMessage, cancellationToken);
-        return response.As<TResponse?>();
+        var result = await RequestInternal<TRequest, TResponse>(requestData, cancellationToken);
+        var response = result.Select(data => data.As<TResponse>());
+        return response.ValueOrDefault();
     }
 
     private Task PublishInternal<TMessage>(TMessage message, string action, CancellationToken cancellationToken) where TMessage : IMessage
@@ -88,6 +62,20 @@ internal class DefaultPublisher : IPublisher
         );
 
         return providerPublisher.Publish(publishConfig, aetherMessage, cancellationToken);
+    }
+
+    private async Task<Result<AetherData>> RequestInternal<TRequest, TResponse>(AetherData data, CancellationToken cancellationToken)
+    {
+        var subject = DefaultSubjectTypeMapper.From(publishConfig);
+        var aetherMessage = CreateMessage(
+            data,
+            typeof(TRequest),
+            subject,
+            action: nameof(Request)
+        );
+        aetherMessage.SetResponseTypeHeaders<TResponse>();
+
+        return await providerPublisher.Request(publishConfig, aetherMessage, cancellationToken);
     }
 
     private static AetherMessage CreateMessage(AetherData data, Type dataType, SubjectTypeMapping subjectMapping, string? action)

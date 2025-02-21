@@ -1,7 +1,6 @@
 using System.Reflection;
 using Aether.Abstractions.Messaging;
 using RickDotNet.Base;
-using RickDotNet.Extensions.Base;
 
 namespace Aether.Messaging;
 
