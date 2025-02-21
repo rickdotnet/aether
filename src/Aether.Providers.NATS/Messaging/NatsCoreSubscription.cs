@@ -78,7 +78,7 @@ internal class NatsCoreSubscription : ISubscription
             var replyFunc = replySubject != null
                 ? new Func<AetherData, CancellationToken, Task>(
                     (response, innerCancel) =>
-                        connection.PublishAsync(replySubject, response, cancellationToken: innerCancel).AsTask()
+                        connection.PublishAsync(replySubject, response.Data, cancellationToken: innerCancel).AsTask()
                 )
                 : null;
 
