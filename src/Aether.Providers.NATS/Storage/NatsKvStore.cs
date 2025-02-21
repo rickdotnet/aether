@@ -1,6 +1,7 @@
 using Aether.Abstractions.Storage;
 using NATS.Client.KeyValueStore;
 using RickDotNet.Base;
+using RickDotNet.Extensions.Base;
 
 namespace Aether.Providers.NATS.Storage;
 
@@ -21,10 +22,26 @@ public class NatsKvStore : IStore
             : Result.Failure<AetherData>(result.Error);
     }
 
+    public async ValueTask<Result<T>> Get<T>(string id, CancellationToken token)
+    {
+        var storeResult = await Get(id, token);
+        var valueResult = storeResult.Select(d => d.As<T>() ?? default);
+        
+        return valueResult.ValueOrDefault() == null 
+            ? Result.Failure<T>("No value, buddy.") 
+            : valueResult!;
+    }
+
     public async ValueTask<Result<AetherData>> Insert(string id, AetherData data, CancellationToken token = default)
     {
         await kvStore.PutAsync(id, data.Data, cancellationToken: token);
         return Result.Success(data);
+    }
+
+    public async ValueTask<Result<T>> Insert<T>(string id, T data, CancellationToken token = default)
+    {
+        var result = await Insert(id, AetherData.Serialize(data), token);
+        return result.Select(d => d.As<T>() ?? data);
     }
 
     public async ValueTask<Result<AetherData>> Delete(string id, CancellationToken token = default)

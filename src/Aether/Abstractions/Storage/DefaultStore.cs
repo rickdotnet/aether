@@ -1,4 +1,5 @@
 using RickDotNet.Base;
+using RickDotNet.Extensions.Base;
 
 namespace Aether.Abstractions.Storage;
 
@@ -29,8 +30,24 @@ public class DefaultStore :  IDefaultStore
     public ValueTask<Result<AetherData>> Get(string id, CancellationToken token = default) 
         => Default.Get(id, token);
 
+    public async ValueTask<Result<T>> Get<T>(string id, CancellationToken token)
+    {
+        var storeResult = await Get(id, token);
+        var valueResult = storeResult.Select(d => d.As<T>() ?? default);
+        
+        return valueResult.ValueOrDefault() == null 
+            ? Result.Failure<T>("No value, buddy.") 
+            : valueResult!;
+    }
+
     public ValueTask<Result<AetherData>> Insert(string id, AetherData data, CancellationToken token = default) 
         => Default.Insert(id, data, token);
+
+    public async ValueTask<Result<T>> Insert<T>(string id, T data, CancellationToken token = default)
+    {
+        var result = await Insert(id, AetherData.Serialize(data), token);
+        return result.Select(d => d.As<T>() ?? data);
+    }
 
     public ValueTask<Result<AetherData>> Delete(string id, CancellationToken token = default) 
         => Default.Delete(id, token);

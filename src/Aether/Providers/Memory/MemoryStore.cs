@@ -1,6 +1,7 @@
 using Aether.Abstractions.Storage;
 using Microsoft.Extensions.Caching.Memory;
 using RickDotNet.Base;
+using RickDotNet.Extensions.Base;
 
 namespace Aether.Providers.Memory;
 
@@ -8,17 +9,33 @@ public class MemoryStore : IStore
 {
     private readonly MemoryCache memoryCache = new(new MemoryCacheOptions());
 
-    public ValueTask<Result<AetherData>> Get(string id, CancellationToken token = default) 
+    public ValueTask<Result<AetherData>> Get(string id, CancellationToken token)
         => ValueTask.FromResult(
             memoryCache.TryGetValue(id, out Memory<byte> data)
                 ? Result.Success(new AetherData(data))
                 : Result.Failure<AetherData>($"No data found for id: {id}")
         );
 
+    public async ValueTask<Result<T>> Get<T>(string id, CancellationToken token)
+    {
+        var storeResult = await Get(id, token);
+        var valueResult = storeResult.Select(d => d.As<T>() ?? default);
+        
+        return valueResult.ValueOrDefault() == null 
+            ? Result.Failure<T>("No value, buddy.") 
+            : valueResult!;
+    }
+
     public ValueTask<Result<AetherData>> Insert(string id, AetherData data, CancellationToken token = default)
     {
         memoryCache.Set(id, data.Data);
         return ValueTask.FromResult(Result.Success(data));
+    }
+
+    public async ValueTask<Result<T>> Insert<T>(string id, T data, CancellationToken token = default)
+    {
+        var result = await Insert(id, AetherData.Serialize(data), token);
+        return result.Select(d => d.As<T>() ?? data);
     }
 
     public ValueTask<Result<AetherData>> Delete(string id, CancellationToken token = default)

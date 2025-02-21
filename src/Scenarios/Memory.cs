@@ -14,6 +14,16 @@ public class Memory
         var endpointProvider = new GenericEndpointProvider();
         var client = AetherClient.CreateMemoryClient(endpointProvider);
 
+        var storage = client.Storage;
+        var item = await storage.Insert("test", "my-string");
+        var item2 = await storage.Insert("test-2", somethingHappened);
+
+        var outItem = await storage.Get<string>("test", CancellationToken.None);
+        var outItem2 = await storage.Get<SomethingHappenedCommand>("test-2", CancellationToken.None);
+
+        Console.WriteLine(outItem);
+        Console.WriteLine(outItem2);
+        
         await client.Messaging.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle);
         await client.Messaging.AddEndpoint<InstanceEndpoint>(InstanceEndpoint.EndpointConfig);
         await client.Messaging.AddEndpoint<SecondEndpoint>(SecondEndpoint.EndpointConfig);
