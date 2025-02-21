@@ -53,11 +53,13 @@ internal class NatsCoreSubscription : ISubscription
 
         Task<Result<VoidResult>> ProcessMessage(NatsMsg<byte[]> natsMsg)
         {
-            var headers = natsMsg.Headers?.ToDictionary(kp => kp.Key, kp => kp.Value) 
-                          ?? new Dictionary<string, StringValues>();
-            
+            var headers = natsMsg.Headers?.ToDictionary(kp => kp.Key, kp => kp.Value) ?? new Dictionary<string, StringValues>();
+
             headers[MessageHeader.Subject] = natsMsg.Subject;
-            
+
+            if (natsMsg.Subject.StartsWith("$SYS.REQ", StringComparison.OrdinalIgnoreCase))
+                headers[MessageHeader.MessageAction] = "request";
+
             var message = new AetherMessage
             {
                 Headers = headers,
@@ -83,6 +85,6 @@ internal class NatsCoreSubscription : ISubscription
             return Result.TryAsync(() => handler(new MessageContext(message, replyFunc), cancellationToken));
         }
     }
-    
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

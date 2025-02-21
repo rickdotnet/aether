@@ -75,6 +75,9 @@ internal class NatsJetStreamSubscription : ISubscription
 
             headers[MessageHeader.Subject] = natsMsg.Subject;
 
+            if (natsMsg.Subject.StartsWith("$SYS.REQ", StringComparison.OrdinalIgnoreCase))
+                headers[MessageHeader.MessageAction] = "request";
+            
             var message = new AetherMessage
             {
                 Headers = headers,
