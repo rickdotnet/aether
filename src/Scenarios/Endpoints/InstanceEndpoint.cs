@@ -38,4 +38,5 @@ public class InstanceEndpoint : IHandle<SomethingHappenedCommand> //, IReplyTo<M
     //     Console.WriteLine("Instance Endpoint - TestRequest - Normal");
     //     return Task.FromResult("Success From Instance Endpoint");
     // }
+    public Task Handle(MessageContext context, CancellationToken cancellationToken) => throw new NotImplementedException();
 }

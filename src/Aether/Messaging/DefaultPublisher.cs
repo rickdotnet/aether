@@ -35,6 +35,9 @@ internal class DefaultPublisher : IPublisher
     public Task<Result<AetherData>> Request<TRequest>(AetherData requestData, CancellationToken cancellationToken)
         => RequestInternal<TRequest, AetherData>(requestData, cancellationToken);
 
+    public Task<Result<AetherData>> Request<TRequest>(AetherData<TRequest> requestData, CancellationToken cancellationToken) 
+        => RequestInternal<TRequest, AetherData>(requestData.Data, cancellationToken);
+
     public Task<TResponse?> Request<TRequest, TResponse>(TRequest requestMessage, CancellationToken cancellationToken) where TRequest : IRequest<TResponse> 
         => Request<TRequest, TResponse>(AetherData.Serialize(requestMessage), cancellationToken);
 

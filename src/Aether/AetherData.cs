@@ -15,6 +15,7 @@ public sealed class AetherData
     }
 
     public static implicit operator AetherData(byte[] data) => new(data);
+
     public static implicit operator byte[](AetherData data) => data.ToArray();
 
     public override string ToString() => System.Text.Encoding.UTF8.GetString(Data.Span);
@@ -47,4 +48,23 @@ public sealed class AetherData
         var json = System.Text.Json.JsonSerializer.Serialize(data);
         return new AetherData(System.Text.Encoding.UTF8.GetBytes(json));
     }
+
+    public static AetherData<T> From<T>(AetherData data) => new(data);
+}
+
+public sealed class AetherData<T>
+{
+    public Type Type { get; }
+    public AetherData Data { get; }
+    
+    public T? As() => Data.As<T>();
+
+    internal AetherData(AetherData data)
+    {
+        Data = data;
+        Type = typeof(T);
+    }
+
+    public static AetherData<T> Serialize(T data)
+        => new(AetherData.Serialize(data));
 }
