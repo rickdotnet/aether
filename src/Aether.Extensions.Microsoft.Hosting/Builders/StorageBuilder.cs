@@ -37,11 +37,8 @@ public class StorageBuilder : IStorageBuilder
         if (registration.StoreName == IDefaultStore.DefaultStoreName)
             DefaultStoreType = registration.StoreType!;
         
-        aetherBuilder.RegisterServices(services =>
-        {
-            services.TryAddSingleton(registration.StoreType!);
-        });
-
+        StoreRegistrations.Add(registration);
+        
         return this;
     }
     

@@ -31,7 +31,9 @@ public class Hosted
                     .AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle)
                     .AddHandler(new EndpointConfig("static.endpoint2"), StaticEndpoint.Handle)
                 );
-            aether.Storage.AddNatsStore();
+            
+            // creates a named store and keeps the default store as memory
+            aether.Storage.AddNatsStore("nats"); 
         });
 
         var host = builder.Build();
@@ -39,7 +41,9 @@ public class Hosted
 
         var aether = host.Services.GetRequiredService<AetherClient>();
         await aether.Storage.Insert("test", "storage test");
-        
+        var natsStore = aether.Storage.GetStore("nats").ValueOrDefault() ?? throw new Exception("NATS store not found");
+        await natsStore.Insert("test", "nats test");
+
         var messaging = aether.Messaging;
         await messaging.Send(
             AetherMessage.For(
@@ -59,10 +63,16 @@ public class Hosted
             onSuccess: data => Console.WriteLine($"Response: {data.As<string>()}"),
             onError: error => Console.WriteLine($"Error: {error}")
         );
-        
+
         var storageResult = await aether.Storage.Get<string>("test");
         storageResult.Resolve(
             onSuccess: data => Console.WriteLine($"Storage test: {data}"),
+            onError: error => Console.WriteLine($"Error: {error}")
+        );
+
+        var natsStoreResult = await natsStore.Get<string>("test");
+        natsStoreResult.Resolve(
+            onSuccess: data => Console.WriteLine($"NATS Storage test: {data}"),
             onError: error => Console.WriteLine($"Error: {error}")
         );
 

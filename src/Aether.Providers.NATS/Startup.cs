@@ -61,7 +61,6 @@ public static class Startup
                 // with NatsKVStore from the NATS.Client library
                 return new NatsKvStore(storeName, kvContext);
             });
-            services.AddSingleton<IStore>(sp => sp.GetRequiredService<NatsKvStore>());
         });
         
         storageBuilder.AddStore<NatsKvStore>(storeName, maxBytes);
