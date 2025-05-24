@@ -1,4 +1,4 @@
-using Aether.Abstractions.Messaging.Configuration;
+using Aether.Abstractions.Messaging;
 using Aether.Messaging;
 using RickDotNet.Base;
 

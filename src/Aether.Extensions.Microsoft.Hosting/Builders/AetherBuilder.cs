@@ -1,4 +1,9 @@
 using Aether.Abstractions.Hosting;
+using Aether.Abstractions.Messaging;
+using Aether.Abstractions.Storage;
+using Aether.Extensions.Microsoft.Hosting.Messaging;
+using Aether.Messaging;
+using Aether.Providers.Memory;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aether.Extensions.Microsoft.Hosting.Builders;
@@ -16,6 +21,9 @@ public class AetherBuilder : IAetherBuilder
         this.services = services;
         Messaging = new MessagingBuilder(this);
         Storage = new StorageBuilder(this);
+
+        services.AddSingleton<MemoryHub>();
+        services.AddSingleton<MemoryStore>();
     }
 
     internal void Build()
@@ -28,13 +36,78 @@ public class AetherBuilder : IAetherBuilder
         foreach (var service in internalServices)
             services.Add(service);
 
-        // we bootstrap a memory client, then swap the
-        // implementations at runtime
-        services.AddSingleton<AetherClient>(AetherClient.MemoryClient);
+        services.AddSingleton<AetherClient>(serviceProvider =>
+        {
+            var defaultHub = (IMessageHub)serviceProvider.GetRequiredService(Messaging.DefaultHubType);
+            var storage = (IStore)serviceProvider.GetRequiredService(Storage.DefaultStoreType);
+
+            var defaultAetherHub = new AetherHub(defaultHub);
+            var client = new AetherClient(defaultAetherHub, storage);
+
+            // foreach registration, set the hubs
+            var hubRegistrations = ((MessagingBuilder)Messaging).HubRegistrations;
+            foreach (var registration in hubRegistrations)
+            {
+                if (registration.HubName == IDefaultMessageHub.DefaultHubKey)
+                {
+                    RegisterHandlers(defaultAetherHub, registration.EndpointRegistrations);
+                }
+                else
+                {
+                    var hubType = registration.HubType;
+                    var hub = (IMessageHub)serviceProvider.GetRequiredService(hubType);
+
+                    var aetherHub = AetherHub.For(hub);
+                    client.Messaging.SetHub(registration.HubName, aetherHub);
+
+                    RegisterHandlers(aetherHub, registration.EndpointRegistrations, serviceProvider);
+                }
+            }
+
+            var storageRegistrations = ((StorageBuilder)Storage).StoreRegistrations;
+            foreach (var storeRegistration in storageRegistrations)
+            {
+                if (storeRegistration.StoreName == IDefaultStore.DefaultStoreName)
+                    continue;
+
+                client.Storage.SetStore(
+                    storeRegistration.StoreName,
+                    (IStore)serviceProvider.GetRequiredService(storeRegistration.StoreType!)
+                );
+            }
+
+            return client;
+        });
+
         services.AddSingleton<IAetherClient>(p => p.GetRequiredService<AetherClient>());
-        services.AddHostedService<AetherBackgroundService>();
+        //services.AddHostedService<AetherBackgroundService>();
     }
 
+    private static void RegisterHandlers(AetherHub hub, IReadOnlyList<EndpointRegistration> registrations, IServiceProvider? provider = null)
+    {
+        foreach (var registration in registrations)
+        {
+            if (registration.IsHandler)
+            {
+                var handler = new AetherHandler(registration.Handler!);
+                hub.AddHandler(
+                    registration.Config,
+                    handler.Handle,
+                    CancellationToken.None // cancellation will be handled in DefaultMessageHub
+                );
+            }
+            else
+            {
+                var endpointProvider = new DefaultEndpointProvider(provider!);
+                var endpointHandler = new AetherHandler(registration.EndpointType!, endpointProvider);
+                hub.AddHandler(
+                    registration.Config,
+                    endpointHandler.Handle,
+                    CancellationToken.None // cancellation will be handled in DefaultMessageHub
+                );
+            }
+        }
+    }
 
     public void RegisterServices(Action<IServiceCollection> registerAction)
         => registerAction(internalServices);

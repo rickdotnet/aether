@@ -1,7 +1,5 @@
 using Aether.Abstractions.Messaging;
-using Aether.Abstractions.Messaging.Configuration;
 using Aether.Messaging;
-using RickDotNet.Base;
 
 namespace Aether.Extensions.Microsoft.Hosting.Messaging;
 
@@ -10,36 +8,20 @@ public sealed class HubRegistration
     private readonly List<EndpointRegistration> endpointRegistrations = new();
     public IReadOnlyList<EndpointRegistration> EndpointRegistrations => endpointRegistrations;
     public string HubName { get; }
-    public Type? SubscriptionProviderType { get; private set; }
+    public Type HubType { get; private set; }
 
-    public Type? PublisherProviderType { get; private set; }
-
-    public HubRegistration(string hubName)
+    public HubRegistration(string hubName, Type hubType)
     {
         HubName = hubName;
-    }
-
-    public Result<bool> Validate()
-    {
-        return SubscriptionProviderType != null && PublisherProviderType != null
-            ? true
-            : Result.Failure<bool>("Missing provider type(s)");
+        HubType = hubType;
     }
 
     public void AddRegistration<T>(EndpointConfig config)
         => endpointRegistrations.Add(EndpointRegistration.From<T>(config));
 
-    public void AddRegistration(Type endpointType, EndpointConfig endpointConfig)
+    public void AddRegistration(EndpointConfig endpointConfig, Type endpointType)
         => endpointRegistrations.Add(EndpointRegistration.From(endpointConfig, endpointType));
 
     public void AddRegistration(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler)
         => endpointRegistrations.Add(EndpointRegistration.From(endpointConfig, handler));
-
-    public void SetProviders<TSubscriptionProvider, TPublisherProvider>()
-        where TSubscriptionProvider : ISubscriptionProvider
-        where TPublisherProvider : IPublisherProvider
-    {
-        SubscriptionProviderType = typeof(TSubscriptionProvider);
-        PublisherProviderType = typeof(TPublisherProvider);
-    }
 }

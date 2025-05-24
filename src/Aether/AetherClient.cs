@@ -17,36 +17,20 @@ public class AetherClient : IAetherClient
     public IDefaultMessageHub Messaging { get; }
     public IDefaultStore Storage { get; }
 
-    public AetherClient(IDefaultMessageHub messaging, IDefaultStore storage)
+    public AetherClient(IMessageHub messaging, IStore storage)
     {
-        Messaging = messaging;
-        Storage = storage;
+        Messaging = new DefaultMessageHub(messaging);
+        Storage = new DefaultStore(storage);
     }
 
-    public static AetherClient CreateMemoryClient(IEndpointProvider? endpointProvider = null)
+    private static AetherClient CreateMemoryClient()
     {
-        var inMemoryProvider = new MemoryHubProvider();
-        var inMemoryStore = new MemoryStore();
-
-        var syncHub = new ChannelBackedHub(
-            subProvider: inMemoryProvider,
-            publisherProvider: inMemoryProvider,
-            endpointProvider: endpointProvider
-        );
+        var memoryHub = new MemoryHub();
+        var memoryStore = new MemoryStore();
 
         return new AetherClient(
-            new DefaultMessageHub(syncHub),
-            new DefaultStore(inMemoryStore)
-        );
-    }
-
-    public static AetherClient CreateClient(ISubscriptionProvider subscriptionProvider, IPublisherProvider publisherProvider)
-    {
-        var syncHub = new ChannelBackedHub(subscriptionProvider, publisherProvider);
-
-        return new AetherClient(
-            new DefaultMessageHub(syncHub),
-            new DefaultStore(new MemoryStore())
+            new DefaultMessageHub(memoryHub),
+            new DefaultStore(memoryStore)
         );
     }
 }

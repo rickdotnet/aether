@@ -1,7 +1,7 @@
 using Aether.Abstractions.Messaging;
-using Aether.Abstractions.Messaging.Configuration;
 using RickDotNet.Base;
 
+// ReSharper disable once CheckNamespace
 namespace Aether.Messaging;
 
 internal class DefaultMessageHub : IDefaultMessageHub
@@ -21,9 +21,12 @@ internal class DefaultMessageHub : IDefaultMessageHub
         };
     }
 
+    /// <summary>
+    /// Create a new DefaultMessagingHub with the given hubs.
+    /// </summary>
+    /// <param name="hubs"></param>
     public DefaultMessageHub(Dictionary<string, IMessageHub> hubs)
     {
-        // copy the dictionary
         this.hubs = hubs.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         if (!this.hubs.ContainsKey(IDefaultMessageHub.DefaultHubKey))
         {
@@ -34,45 +37,34 @@ internal class DefaultMessageHub : IDefaultMessageHub
     /// <inheritdoc />
     public Result<IMessageHub> GetHub(string hubKey)
     {
-        // result or failure
         return Result.Try(() => hubs[hubKey]);
     }
 
     /// <inheritdoc />
-    public Result<VoidResult> SetHub(string hubKey, IMessageHub hub)
-    {
-        return Result.Try(() =>
-        {
-            hubs[hubKey] = hub;    
-        });
-    }
+    public Result<VoidResult> SetHub(string hubKey, IMessageHub hub) 
+        => Result.Try(() => { hubs[hubKey] = hub; });
 
     /// <inheritdoc />
     public IMessageHub AsHub() => hubs[IDefaultMessageHub.DefaultHubKey];
 
     /// <inheritdoc />
-    public Task Start(CancellationToken cancellationToken) => DefaultHub.Start(cancellationToken);
+    public void AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler, CancellationToken cancellationToken) 
+        // TODO: need to handle cancellation token in hosted environment
+        //       will likely add a background service and set it from there.
+        //       but, will need to link it to the passed in cancellation token
+        => DefaultHub.AddHandler(endpointConfig, handler, cancellationToken);  
 
     /// <inheritdoc />
-    public Task AddEndpoint<T>(EndpointConfig endpointConfig)
-        => DefaultHub.AddEndpoint<T>(endpointConfig);
-    
-    /// <inheritdoc />
-    public Task AddEndpoint(EndpointConfig endpointConfig, Type endpointType)
-        => DefaultHub.AddEndpoint(endpointConfig, endpointType);
+    public Task<Result<VoidResult>> Send(AetherMessage message, CancellationToken cancellationToken) 
+        => DefaultHub.Send(message, cancellationToken);
 
     /// <inheritdoc />
-    public Task AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler)
-        => DefaultHub.AddHandler(endpointConfig, handler);
+    public Task<Result<AetherData>> Request(AetherMessage message, CancellationToken cancellationToken) 
+        => DefaultHub.Request(message, cancellationToken);
 
-    /// <inheritdoc />
-    public IPublisher CreatePublisher(EndpointConfig endpointConfig)
-        => DefaultHub.CreatePublisher(endpointConfig);
-
-    /// <inheritdoc />
-    public IPublisher CreatePublisher(PublishConfig publishConfig)
-        => DefaultHub.CreatePublisher(publishConfig);
-
-    public IPublisher CreatePublisher(string subject) => DefaultHub.CreatePublisher(subject);
-
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var hub in hubs.Values)
+            await hub.DisposeAsync();
+    }
 }

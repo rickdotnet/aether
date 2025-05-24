@@ -17,6 +17,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Aether.Extensions.Microsoft.Hosting\Aether.Extensions.Microsoft.Hosting.csproj" />
       <ProjectReference Include="..\Aether.Providers.NATS\Aether.Providers.NATS.csproj" />
+     
     </ItemGroup>
 
 </Project>
