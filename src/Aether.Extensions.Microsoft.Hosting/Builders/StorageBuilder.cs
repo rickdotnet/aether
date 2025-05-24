@@ -2,15 +2,18 @@ using Aether.Abstractions.Hosting;
 using Aether.Abstractions.Storage;
 using Aether.Providers.Memory;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Aether.Extensions.Microsoft.Hosting.Builders;
 
 public class StorageBuilder : IStorageBuilder
 {
     public Type DefaultStoreType { get; private set; } = typeof(MemoryStore);
+    
+    public List<StoreRegistration> StoreRegistrations { get; } = [];
     private readonly AetherBuilder aetherBuilder;
 
-    private HashSet<string> storeNames = new();
+    private readonly HashSet<string> storeNames = [];
 
     public StorageBuilder(AetherBuilder aetherBuilder)
     {
@@ -24,9 +27,9 @@ public class StorageBuilder : IStorageBuilder
         => AddStore<T>(IDefaultStore.DefaultStoreName, maxBytes);
 
     public IStorageBuilder AddStore<T>(string storeName, int maxBytes = 0) where T : IStore
-        => AddStore(StorageRegistration.From<T>(storeName));
+        => AddStore(StoreRegistration.From<T>(storeName));
 
-    private IStorageBuilder AddStore(StorageRegistration registration)
+    private IStorageBuilder AddStore(StoreRegistration registration)
     {
         if (!storeNames.Add(registration.StoreName))
             throw new InvalidOperationException($"Store with name {registration.StoreName} already exists.");
@@ -36,9 +39,14 @@ public class StorageBuilder : IStorageBuilder
         
         aetherBuilder.RegisterServices(services =>
         {
-            services.AddSingleton(registration.StoreType!);
-            services.AddSingleton(registration);
+            services.TryAddSingleton(registration.StoreType!);
         });
+
         return this;
+    }
+    
+    public void RegisterServices(Action<IServiceCollection> configureServices)
+    {
+        aetherBuilder.RegisterServices(configureServices);
     }
 }

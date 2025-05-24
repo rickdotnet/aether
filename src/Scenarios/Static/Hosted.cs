@@ -25,17 +25,21 @@ public class Hosted
             });
         });
         services.AddAether(aether =>
+        {
             aether.Messaging
                 .AddNatsHub(hub => hub
                     .AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle)
                     .AddHandler(new EndpointConfig("static.endpoint2"), StaticEndpoint.Handle)
-                )
-        );
+                );
+            aether.Storage.AddNatsStore();
+        });
 
         var host = builder.Build();
         var hostTask = host.StartAsync();
 
         var aether = host.Services.GetRequiredService<AetherClient>();
+        await aether.Storage.Insert("test", "storage test");
+        
         var messaging = aether.Messaging;
         await messaging.Send(
             AetherMessage.For(
@@ -53,6 +57,12 @@ public class Hosted
 
         response.Resolve(
             onSuccess: data => Console.WriteLine($"Response: {data.As<string>()}"),
+            onError: error => Console.WriteLine($"Error: {error}")
+        );
+        
+        var storageResult = await aether.Storage.Get<string>("test");
+        storageResult.Resolve(
+            onSuccess: data => Console.WriteLine($"Storage test: {data}"),
             onError: error => Console.WriteLine($"Error: {error}")
         );
 

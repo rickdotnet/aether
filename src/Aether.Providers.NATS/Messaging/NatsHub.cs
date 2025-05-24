@@ -35,7 +35,7 @@ public sealed class NatsHub : IMessageHub
             {
                 try
                 {
-                    Console.WriteLine("Received message");
+                    logger.LogDebug("Received message on {Subject}", msg.Subject);
                     var result = await InnerHandle(msg, handler, cancellationToken);
                     result.OnError(error => logger.LogError("{Error}", error));
                 }

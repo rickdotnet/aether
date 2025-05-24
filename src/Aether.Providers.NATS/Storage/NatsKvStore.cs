@@ -7,11 +7,16 @@ namespace Aether.Providers.NATS.Storage;
 
 public class NatsKvStore : IStore
 {
-    private readonly INatsKVStore kvStore;
+    private INatsKVStore kvStore = null!;
 
-    public NatsKvStore(INatsKVStore kvStore)
+    public NatsKvStore(string bucketName, INatsKVContext kvContext)
     {
-        this.kvStore = kvStore;
+        // https://github.com/stebet/Stebet.Nats.DistributedCache/blob/72749defc8db1095eda596e2f0f0e46ba1f4f8a0/src/Stebet.Nats.DistributedCache/NatsDistributedCache.cs#L29
+        var createOrUpdateTask = Task.Run(async () => { kvStore = await kvContext.CreateOrUpdateStoreAsync(new NatsKVConfig(bucketName)).ConfigureAwait(false); });
+
+        createOrUpdateTask.Wait();
+        if (kvStore == null)
+            throw new Exception("Failed to create or update NATS KV store", createOrUpdateTask.Exception);
     }
 
     public async ValueTask<Result<AetherData>> Get(string id, CancellationToken token = default)
@@ -26,9 +31,9 @@ public class NatsKvStore : IStore
     {
         var storeResult = await Get(id, token);
         var valueResult = storeResult.Select(d => d.As<T>() ?? default);
-        
-        return valueResult.ValueOrDefault() == null 
-            ? Result.Failure<T>("No value, buddy.") 
+
+        return valueResult.ValueOrDefault() == null
+            ? Result.Failure<T>("No value, buddy.")
             : valueResult!;
     }
 
@@ -59,10 +64,8 @@ public class NatsKvStore : IStore
     public async ValueTask<Result<IEnumerable<string>>> ListKeys(CancellationToken token = default)
     {
         var keys = new List<string>();
-        await foreach (var key in kvStore.GetKeysAsync(new NatsKVWatchOpts
-                       {
-                           OnNoData = _ => new ValueTask<bool>(false),
-                       }, cancellationToken: token))
+        var watchOpts = new NatsKVWatchOpts { OnNoData = _ => new ValueTask<bool>(true) };
+        await foreach (var key in kvStore.GetKeysAsync(watchOpts, token))
         {
             keys.Add(key);
         }

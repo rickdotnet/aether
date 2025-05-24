@@ -43,10 +43,10 @@ public class AetherBuilder : IAetherBuilder
 
             var defaultAetherHub = new AetherHub(defaultHub);
             var client = new AetherClient(defaultAetherHub, storage);
-            
+
             // foreach registration, set the hubs
             var hubRegistrations = ((MessagingBuilder)Messaging).HubRegistrations;
-            foreach(var registration in hubRegistrations)
+            foreach (var registration in hubRegistrations)
             {
                 if (registration.HubName == IDefaultMessageHub.DefaultHubKey)
                 {
@@ -56,27 +56,36 @@ public class AetherBuilder : IAetherBuilder
                 {
                     var hubType = registration.HubType;
                     var hub = (IMessageHub)serviceProvider.GetRequiredService(hubType);
-                    
+
                     var aetherHub = AetherHub.For(hub);
                     client.Messaging.SetHub(registration.HubName, aetherHub);
-                    
+
                     RegisterHandlers(aetherHub, registration.EndpointRegistrations, serviceProvider);
                 }
             }
-            
-            // TODO: register storage
-            
-            
+
+            var storageRegistrations = ((StorageBuilder)Storage).StoreRegistrations;
+            foreach (var storeRegistration in storageRegistrations)
+            {
+                if (storeRegistration.StoreName == IDefaultStore.DefaultStoreName)
+                    continue;
+
+                client.Storage.SetStore(
+                    storeRegistration.StoreName,
+                    (IStore)serviceProvider.GetRequiredService(storeRegistration.StoreType!)
+                );
+            }
+
             return client;
         });
-        
+
         services.AddSingleton<IAetherClient>(p => p.GetRequiredService<AetherClient>());
         //services.AddHostedService<AetherBackgroundService>();
     }
-    
+
     private static void RegisterHandlers(AetherHub hub, IReadOnlyList<EndpointRegistration> registrations, IServiceProvider? provider = null)
     {
-        foreach(var registration in registrations)
+        foreach (var registration in registrations)
         {
             if (registration.IsHandler)
             {
@@ -84,7 +93,7 @@ public class AetherBuilder : IAetherBuilder
                 hub.AddHandler(
                     registration.Config,
                     handler.Handle,
-                    CancellationToken.None
+                    CancellationToken.None // cancellation will be handled in DefaultMessageHub
                 );
             }
             else
@@ -94,7 +103,7 @@ public class AetherBuilder : IAetherBuilder
                 hub.AddHandler(
                     registration.Config,
                     endpointHandler.Handle,
-                    CancellationToken.None
+                    CancellationToken.None // cancellation will be handled in DefaultMessageHub
                 );
             }
         }

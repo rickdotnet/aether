@@ -1,6 +1,7 @@
 using Aether.Abstractions.Messaging;
 using RickDotNet.Base;
 
+// ReSharper disable once CheckNamespace
 namespace Aether.Messaging;
 
 internal class DefaultMessageHub : IDefaultMessageHub
@@ -48,7 +49,10 @@ internal class DefaultMessageHub : IDefaultMessageHub
 
     /// <inheritdoc />
     public void AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler, CancellationToken cancellationToken) 
-        => DefaultHub.AddHandler(endpointConfig, handler, cancellationToken);
+        // TODO: need to handle cancellation token in hosted environment
+        //       will likely add a background service and set it from there.
+        //       but, will need to link it to the passed in cancellation token
+        => DefaultHub.AddHandler(endpointConfig, handler, cancellationToken);  
 
     /// <inheritdoc />
     public Task<Result<VoidResult>> Send(AetherMessage message, CancellationToken cancellationToken) 

@@ -21,6 +21,8 @@ public class Memory
             memoryStore
         );
         
+        await client.Storage.Insert("test", "storage test");
+        
         client.Messaging.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle);
         client.Messaging.AddHandler(new EndpointConfig("static.endpoint2"), StaticEndpoint.Handle);
 
@@ -46,9 +48,14 @@ public class Memory
         
         Console.WriteLine();
         await Task.Delay(5000);
-        var start = DateTime.Now;
+
+        var storageResult = await client.Storage.Get<string>("test");
+        storageResult.Resolve(
+            onSuccess: data => Console.WriteLine($"Storage test: {data}"),
+            onError: error => Console.WriteLine($"Error: {error}")
+        );
         
-        for (var i = 0; i < 20; i++)
+        for (var i = 0; i < 10; i++)
         {
             await messaging.Send(
                 AetherMessage.For(
@@ -64,9 +71,6 @@ public class Memory
                 )
             );
         }
-        var end = DateTime.Now;
-        var elapsed = end - start;
-        Console.WriteLine($"Elapsed time for 200 messages: {elapsed.TotalMilliseconds} ms");
         
         await Task.Delay(20000);
     }
