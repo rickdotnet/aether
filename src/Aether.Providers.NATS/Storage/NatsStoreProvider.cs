@@ -6,7 +6,7 @@ using NATS.Net;
 
 namespace Aether.Providers.NATS.Storage;
 
-public sealed class NatsStoreProvider : IStoreProvider
+public sealed class NatsStoreProvider //: IStoreProvider
 {
     private readonly INatsKVContext kvContext;
 

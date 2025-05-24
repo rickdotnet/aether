@@ -15,9 +15,8 @@ public sealed class AetherData
     }
 
     public static implicit operator AetherData(byte[] data) => new(data);
-
     public static implicit operator byte[](AetherData data) => data.ToArray();
-
+    public static implicit operator Memory<byte>(AetherData data) => data.Data;
     public override string ToString() => System.Text.Encoding.UTF8.GetString(Data.Span);
 
     /// <summary>

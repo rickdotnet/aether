@@ -2,7 +2,7 @@ using Aether.Abstractions.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using RickDotNet.Base;
 
-namespace Aether.Messaging;
+namespace Aether.Extensions.Microsoft.Hosting;
 
 internal class DefaultEndpointProvider(IServiceProvider provider) : IEndpointProvider
 {

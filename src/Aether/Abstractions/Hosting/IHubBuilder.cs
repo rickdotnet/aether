@@ -1,5 +1,4 @@
 using Aether.Abstractions.Messaging;
-using Aether.Abstractions.Messaging.Configuration;
 using Aether.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,9 +16,5 @@ public interface IHubBuilder
     /// Registers the services required for the hub to function.
     /// </summary>
     /// <param name="configureServices">Delegate to configure services with the <see cref="IServiceCollection"/>.</param>
-    /// <typeparam name="TSubscriptionProvider">The type of the subscription provider.</typeparam>
-    /// <typeparam name="TPublisherProvider">The type of the publisher provider.</typeparam>
-    public void RegisterServices<TSubscriptionProvider, TPublisherProvider>(Action<IServiceCollection> configureServices)
-        where TSubscriptionProvider : class, ISubscriptionProvider
-        where TPublisherProvider : class, IPublisherProvider;
+    public void RegisterServices(Action<IServiceCollection> configureServices);
 }

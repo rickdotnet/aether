@@ -1,11 +1,10 @@
 using Aether;
 using Aether.Abstractions.Messaging;
-using Aether.Abstractions.Messaging.Configuration;
 using Aether.Messaging;
 
 namespace Scenarios.Endpoints;
 
-public class SecondEndpoint : IHandle<SomethingHappenedCommand>, IReplyTo<Memory.TestRequest, string>
+public class SecondEndpoint : IHandle<SomethingHappenedCommand> //, IReplyTo<Memory.TestRequest, string>
 {
     public static readonly EndpointConfig EndpointConfig = new()
     {
@@ -31,9 +30,9 @@ public class SecondEndpoint : IHandle<SomethingHappenedCommand>, IReplyTo<Memory
         return Task.CompletedTask;
     }
 
-    public Task<string> Handle(Memory.TestRequest message, MessageContext context, CancellationToken cancellationToken = default)
-    {
-        Console.WriteLine("Second Endpoint - TestRequest - Normal");
-        return Task.FromResult("Success From Second Endpoint - Normal");
-    }
+    // public Task<string> Handle(Memory.TestRequest message, MessageContext context, CancellationToken cancellationToken = default)
+    // {
+    //     Console.WriteLine("Second Endpoint - TestRequest - Normal");
+    //     return Task.FromResult("Success From Second Endpoint - Normal");
+    // }
 }
