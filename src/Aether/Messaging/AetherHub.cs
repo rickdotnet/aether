@@ -16,6 +16,8 @@ public sealed class AetherHub : IMessageHub
     {
         this.innerHub = innerHub;
     }
+    
+    public static AetherHub For(IMessageHub innerHub) => new(innerHub);
 
     public void AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler, CancellationToken cancellationToken)
     {

@@ -9,10 +9,10 @@ namespace Aether.Extensions.Microsoft.Hosting.Builders;
 internal class MessagingBuilder : IMessagingBuilder
 {
     public Type DefaultHubType { get; private set; } = typeof(MemoryHub);
-    public List<HubRegistration> HubRegistrations { get; } = new();
+    public List<HubRegistration> HubRegistrations { get; } = [];
 
     private readonly AetherBuilder aetherBuilder;
-    private readonly HashSet<string> hubNames = new();
+    private readonly HashSet<string> hubNames = [];
     
 
     public MessagingBuilder(AetherBuilder aetherBuilder)

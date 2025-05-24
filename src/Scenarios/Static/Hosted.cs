@@ -2,6 +2,7 @@ using Aether;
 using Aether.Abstractions.Messaging;
 using Aether.Extensions.Microsoft.Hosting;
 using Aether.Providers.NATS;
+using Aether.Providers.NATS.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NATS.Extensions.Microsoft.DependencyInjection;
@@ -25,9 +26,9 @@ public class Hosted
         });
         services.AddAether(aether =>
             aether.Messaging
-                .AddNatsHub(hub =>
-                    hub.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle)
-                        .AddHandler(new EndpointConfig("static.endpoint2"), StaticEndpoint.Handle)
+                .AddNatsHub(hub => hub
+                    .AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle)
+                    .AddHandler(new EndpointConfig("static.endpoint2"), StaticEndpoint.Handle)
                 )
         );
 
@@ -54,7 +55,7 @@ public class Hosted
             onSuccess: data => Console.WriteLine($"Response: {data.As<string>()}"),
             onError: error => Console.WriteLine($"Error: {error}")
         );
-        
+
         for (var i = 0; i < 20; i++)
         {
             await messaging.Send(
@@ -63,7 +64,7 @@ public class Hosted
                     new SomethingHappenedCommand($"Message {i}")
                 )
             );
-            
+
             await messaging.Send(
                 AetherMessage.For(
                     "static.endpoint2",

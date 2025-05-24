@@ -56,7 +56,8 @@ public class AetherBuilder : IAetherBuilder
                 {
                     var hubType = registration.HubType;
                     var hub = (IMessageHub)serviceProvider.GetRequiredService(hubType);
-                    var aetherHub = new AetherHub(hub);
+                    
+                    var aetherHub = AetherHub.For(hub);
                     client.Messaging.SetHub(registration.HubName, aetherHub);
                     
                     RegisterHandlers(aetherHub, registration.EndpointRegistrations, serviceProvider);

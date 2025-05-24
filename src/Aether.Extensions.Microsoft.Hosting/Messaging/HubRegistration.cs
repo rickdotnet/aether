@@ -19,7 +19,7 @@ public sealed class HubRegistration
     public void AddRegistration<T>(EndpointConfig config)
         => endpointRegistrations.Add(EndpointRegistration.From<T>(config));
 
-    public void AddRegistration(Type endpointType, EndpointConfig endpointConfig)
+    public void AddRegistration(EndpointConfig endpointConfig, Type endpointType)
         => endpointRegistrations.Add(EndpointRegistration.From(endpointConfig, endpointType));
 
     public void AddRegistration(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler)

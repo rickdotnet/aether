@@ -5,12 +5,7 @@ namespace Scenarios.Endpoints;
 
 public class InstanceEndpoint : IHandle<SomethingHappenedCommand> //, IReplyTo<Memory.TestRequest, string>
 {
-    public static readonly EndpointConfig EndpointConfig = new()
-    {
-        EndpointName = "Instance Endpoint",
-        Subject = "instance.endpoint",
-    };
-
+    public static readonly EndpointConfig EndpointConfig = EndpointConfig.For("instance.endpoint").WithName("Instance Endpoint");
     public Task Handle(SomethingHappenedCommand message, MessageContext context, CancellationToken cancellationToken)
     {
         Console.WriteLine($"Instance Endpoint - {message.Message}");
