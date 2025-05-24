@@ -25,6 +25,9 @@ public sealed class NatsHub : IMessageHub
 
     public void AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler, CancellationToken cancellationToken)
     {
+        // TODO: only core nats is supported right now
+        //       there a HubConfig property on the endpointConfig
+        //       that can be used to determine if it's core nats or jetstream
         Task.Run(async () =>
         {
             logger.LogInformation("Subscribing to {Subject}", endpointConfig.FullSubject);

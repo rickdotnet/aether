@@ -81,9 +81,6 @@ public class MemoryStore : IStore
 
 public static class MemoryCacheExtensions
 {
-    public static IReadOnlyList<string> GetKeys(this MemoryCache memoryCache)
-    {
-        IReadOnlyList<string> list = memoryCache.Keys.Select(o => o.ToString()!).ToList();
-        return list;
-    }
+    public static IReadOnlyList<string> GetKeys(this MemoryCache memoryCache) 
+        => memoryCache.Keys.Select(o => o.ToString()!).ToList();
 }

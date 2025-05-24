@@ -2,9 +2,7 @@ using Aether.Abstractions.Hosting;
 using Aether.Abstractions.Messaging;
 using Aether.Extensions.Microsoft.Hosting.Messaging;
 using Aether.Messaging;
-using Aether.Providers.Memory;
 using Microsoft.Extensions.DependencyInjection;
-using RickDotNet.Extensions.Base;
 
 namespace Aether.Extensions.Microsoft.Hosting.Builders;
 

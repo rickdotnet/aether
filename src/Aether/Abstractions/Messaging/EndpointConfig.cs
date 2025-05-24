@@ -21,9 +21,9 @@ public sealed record EndpointConfig
     public string FullSubject => Namespace != null ? $"{Namespace}.{Subject}" : Subject;
     
     /// <summary>
-    /// This is a temporary solution to provider specific configuration
+    /// This is a temporary solution to hub specific configuration; will be revisited.
     /// </summary>
-    public Dictionary<string, object> ProviderConfig  { get; } = new();
+    public Dictionary<string, object> HubConfig  { get; } = new();
     
     public EndpointConfig(string subject)
     {

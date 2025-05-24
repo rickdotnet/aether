@@ -1,8 +1,6 @@
 using System.Reflection;
-using System.Threading.Channels;
 using Aether.Abstractions.Messaging;
 using RickDotNet.Base;
-using RickDotNet.Extensions.Base;
 
 namespace Aether.Messaging;
 
@@ -13,8 +11,6 @@ public class AetherHandler
     private readonly Func<MessageContext, CancellationToken, Task>? handler;
     private readonly Dictionary<string, Type> subjectMapping = new();
     private readonly Dictionary<Type, EndpointMethod> handleMethods = new();
-    private CancellationTokenSource? cts;
-    private Task? workerTask;
 
     private bool IsHandler => handler != null;
 
@@ -38,6 +34,7 @@ public class AetherHandler
         //   - Handle(MessageType, MessageContext, CancellationToken)   // full
         //   - Handle(MessageType, CancellationToken)                   // slim method, no context
         //   - Handle(MessageContext, CancellationToken)                // fallback, context only 
+        // MessageContext will hit in the second case
 
         // then populate the subjectMapping dictionary
         // with a string key of the message type
@@ -65,20 +62,24 @@ public class AetherHandler
                     endpointMethod = new EndpointMethod(method, MethodType.MessageTypeAndMessageContext);
                     break;
                 // Slim signature: Handle(MessageType, CancellationToken)
+                // Fallback signature: Handle(MessageContext, CancellationToken)
                 case 2 when
                     parameters[1].ParameterType == typeof(CancellationToken):
                     
                     messageType = parameters[0].ParameterType;
                     endpointMethod = new EndpointMethod(method, MethodType.MessageType);
                     break;
-                // Fallback signature: Handle(MessageContext, CancellationToken)
-                case 2 when
-                    parameters[0].ParameterType == typeof(MessageContext) &&
-                    parameters[1].ParameterType == typeof(CancellationToken):
-                    
-                    messageType = typeof(MessageContext);
-                    endpointMethod = new EndpointMethod(method, MethodType.MessageContext);
-                    break;
+                
+                // shouldn't need to fa
+                
+                // // Fallback signature: Handle(MessageContext, CancellationToken)
+                // case 2 when
+                //     parameters[0].ParameterType == typeof(MessageContext) &&
+                //     parameters[1].ParameterType == typeof(CancellationToken):
+                //     
+                //     messageType = typeof(MessageContext);
+                //     endpointMethod = new EndpointMethod(method, MethodType.MessageContext);
+                //     break;
             }
 
             if (endpointMethod != null && messageType != null)

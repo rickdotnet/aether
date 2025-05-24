@@ -1,6 +1,5 @@
 using Aether.Abstractions.Messaging;
 using Aether.Messaging;
-using RickDotNet.Base;
 
 namespace Aether.Extensions.Microsoft.Hosting.Messaging;
 

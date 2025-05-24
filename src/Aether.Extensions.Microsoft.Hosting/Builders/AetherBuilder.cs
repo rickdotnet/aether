@@ -36,10 +36,10 @@ public class AetherBuilder : IAetherBuilder
         foreach (var service in internalServices)
             services.Add(service);
 
-        services.AddSingleton<AetherClient>(p =>
+        services.AddSingleton<AetherClient>(serviceProvider =>
         {
-            var defaultHub = (IMessageHub)p.GetRequiredService(Messaging.DefaultHubType);
-            var storage = (IStore)p.GetRequiredService(Storage.DefaultStoreType);
+            var defaultHub = (IMessageHub)serviceProvider.GetRequiredService(Messaging.DefaultHubType);
+            var storage = (IStore)serviceProvider.GetRequiredService(Storage.DefaultStoreType);
 
             var defaultAetherHub = new AetherHub(defaultHub);
             var client = new AetherClient(defaultAetherHub, storage);
@@ -55,13 +55,16 @@ public class AetherBuilder : IAetherBuilder
                 else
                 {
                     var hubType = registration.HubType;
-                    var hub = (IMessageHub)p.GetRequiredService(hubType);
+                    var hub = (IMessageHub)serviceProvider.GetRequiredService(hubType);
                     var aetherHub = new AetherHub(hub);
                     client.Messaging.SetHub(registration.HubName, aetherHub);
                     
-                    RegisterHandlers(aetherHub, registration.EndpointRegistrations, p);
+                    RegisterHandlers(aetherHub, registration.EndpointRegistrations, serviceProvider);
                 }
             }
+            
+            // TODO: register storage
+            
             
             return client;
         });
@@ -95,7 +98,6 @@ public class AetherBuilder : IAetherBuilder
             }
         }
     }
-
 
     public void RegisterServices(Action<IServiceCollection> registerAction)
         => registerAction(internalServices);
