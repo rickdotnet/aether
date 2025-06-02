@@ -14,7 +14,7 @@
       <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.2" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.2" />
       <PackageReference Include="Microsoft.Extensions.Primitives" Version="9.0.2" />
-      <PackageReference Include="RickDotNet.Base" Version="1.0.8" />
+      <PackageReference Include="RickDotNet.Base" Version="1.1.5" />
     </ItemGroup>
     
 </Project>

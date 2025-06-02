@@ -18,7 +18,7 @@ internal class GenericEndpointProvider : IEndpointProvider
 {
     private readonly Dictionary<Type, object> services = new();
 
-    public Result<VoidResult> AddService<T>(T service) where T : class
+    public Result<Unit> AddService<T>(T service) where T : class
     {
         return Result.Try(() =>
         {

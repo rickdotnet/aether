@@ -20,7 +20,7 @@ public interface IMessageHub : IAsyncDisposable
     /// <param name="message"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<Result<VoidResult>> Send(AetherMessage message, CancellationToken cancellationToken = default);
+    public Task<Result<Unit>> Send(AetherMessage message, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Requests a message from the specified endpoint and waits for a response.

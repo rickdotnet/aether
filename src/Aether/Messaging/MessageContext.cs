@@ -25,10 +25,10 @@ public class MessageContext
         Headers = Message.Headers.AsReadOnly();
     }
 
-    public Task<Result<VoidResult>> Reply(AetherData response, CancellationToken cancellationToken)
+    public Task<Result<Unit>> Reply(AetherData response, CancellationToken cancellationToken)
     {
         if (!ReplyAvailable)
-            return Task.FromResult(Result.Failure<VoidResult>("Reply function not available"));
+            return Task.FromResult(Result.Error("Reply function not available"));
 
         replyCalled = true;
         return Task.FromResult(Result.Try(() => { ReplyFunc!(response, cancellationToken); }));

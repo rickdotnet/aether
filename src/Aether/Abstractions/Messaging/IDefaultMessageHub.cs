@@ -14,7 +14,7 @@ public interface IDefaultMessageHub : IMessageHub
     /// <summary>
     /// Sets the provided message hub at the specified key
     /// </summary>
-    Result<VoidResult> SetHub(string hubKey, IMessageHub hub);
+    Result<Unit> SetHub(string hubKey, IMessageHub hub);
 
     /// <summary>
     /// Returns the default messaging Hub.

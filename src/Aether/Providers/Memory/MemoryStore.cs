@@ -13,7 +13,7 @@ public class MemoryStore : IStore
         => ValueTask.FromResult(
             memoryCache.TryGetValue(id, out Memory<byte> data)
                 ? Result.Success(new AetherData(data))
-                : Result.Failure<AetherData>($"No data found for id: {id}")
+                : Result.Error<AetherData>($"No data found for id: {id}")
         );
 
     public async ValueTask<Result<T>> Get<T>(string id, CancellationToken token)
@@ -22,7 +22,7 @@ public class MemoryStore : IStore
         var valueResult = storeResult.Select(d => d.As<T>() ?? default);
         
         return valueResult.ValueOrDefault() == null 
-            ? Result.Failure<T>("No value, buddy.") 
+            ? Result.Error<T>("No value, buddy.") 
             : valueResult!;
     }
 
@@ -41,7 +41,7 @@ public class MemoryStore : IStore
     public ValueTask<Result<AetherData>> Delete(string id, CancellationToken token = default)
     {
         if (!memoryCache.TryGetValue(id, out byte[]? data))
-            return ValueTask.FromResult(Result.Failure<AetherData>($"No data found for id: {id}"));
+            return ValueTask.FromResult(Result.Error<AetherData>($"No data found for id: {id}"));
 
         memoryCache.Remove(id);
         return ValueTask.FromResult(Result.Success(new AetherData(data)));

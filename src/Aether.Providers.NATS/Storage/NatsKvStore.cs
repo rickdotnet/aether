@@ -33,7 +33,7 @@ public class NatsKvStore : IStore
         var valueResult = storeResult.Select(d => d.As<T>() ?? default);
 
         return valueResult.ValueOrDefault() == null
-            ? Result.Failure<T>("No value, buddy.")
+            ? Result.Error<T>("No value, buddy.")
             : valueResult!;
     }
 

@@ -91,7 +91,7 @@ public class AetherHandler
         }
     }
 
-    public async Task<Result<VoidResult>> Handle(
+    public async Task<Result<Unit>> Handle(
         MessageContext context,
         CancellationToken cancellationToken)
     {
@@ -99,7 +99,7 @@ public class AetherHandler
             return await Result.TryAsync(() => handler!(context, cancellationToken));
 
         if (endpointType == null || endpointProvider == null)
-            return Result.Failure<VoidResult>("No endpoint or provider configured.");
+            return Result.Error("No endpoint or provider configured.");
 
         if (context.Headers.TryGetValue(MessageHeader.MessageTypeMapping, out var headerType) && headerType.Count > 0)
             context.Message.MessageType = subjectMapping[headerType.First()!];
@@ -107,11 +107,11 @@ public class AetherHandler
         var messageType = context.Message.MessageType ?? typeof(MessageContext);
         var endpointMethod = handleMethods.GetValueOrDefault(messageType);
         if (endpointMethod == null)
-            return Result.Failure<VoidResult>($"No Handle method found for type {messageType.Name}.");
+            return Result.Error($"No Handle method found for type {messageType.Name}.");
 
         var endpointInstance = endpointProvider.GetService(endpointType);
         if (endpointInstance == null)
-            return Result.Failure<VoidResult>($"Failed to resolve endpoint instance for {endpointType.Name}.");
+            return Result.Error($"Failed to resolve endpoint instance for {endpointType.Name}.");
 
         try
         {
@@ -132,7 +132,7 @@ public class AetherHandler
         }
         catch (Exception ex)
         {
-            return Result.Failure<VoidResult>($"Error invoking endpoint: {ex.Message}");
+            return Result.Failure(ex);
         }
     }
 

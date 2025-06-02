@@ -21,7 +21,7 @@ public class DefaultStore :  IDefaultStore
     public Result<IStore> GetStore(string storeName) 
         => Result.Try(() => stores[storeName]);
 
-    public Result<VoidResult> SetStore(string storeName, IStore store) 
+    public Result<Unit> SetStore(string storeName, IStore store) 
         => Result.Try(() =>
         {
             stores[storeName] = store;    
@@ -36,7 +36,7 @@ public class DefaultStore :  IDefaultStore
         var valueResult = storeResult.Select(d => d.As<T>() ?? default);
         
         return valueResult.ValueOrDefault() == null 
-            ? Result.Failure<T>("No value, buddy.") 
+            ? Result.Error<T>("No value, buddy.") 
             : valueResult!;
     }
 

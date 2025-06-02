@@ -21,10 +21,10 @@ public class MemoryHub : IMessageHub
     public void AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler, CancellationToken cancellationToken) 
         => handlers[endpointConfig.FullSubject] = handler;
 
-    public async Task<Result<VoidResult>> Send(AetherMessage message, CancellationToken cancellationToken = default)
+    public async Task<Result<Unit>> Send(AetherMessage message, CancellationToken cancellationToken = default)
     {
         if (!handlers.TryGetValue(message.Subject!, out var handler))
-            return Result.Failure<VoidResult>("No channel registered for subject");
+            return Result.Error("No channel registered for subject");
 
         var context = new MessageContext(
             message,
@@ -61,7 +61,7 @@ public class MemoryHub : IMessageHub
         var tcs = new TaskCompletionSource<AetherData>();
 
         if (!pendingRequests.TryAdd(requestId, tcs))
-            return Result.Failure<AetherData>("Failed to register request");
+            return Result.Error<AetherData>("Failed to register request");
 
         try
         {
@@ -78,11 +78,11 @@ public class MemoryHub : IMessageHub
         }
         catch (OperationCanceledException)
         {
-            return Result.Failure<AetherData>("Request timed out or was canceled");
+            return Result.Error<AetherData>("Request timed out or was canceled");
         }
         catch (Exception ex)
         {
-            return Result.Failure<AetherData>($"Request failed: {ex.Message}");
+            return Result.Error<AetherData>($"Request failed: {ex.Message}");
         }
         finally
         {
@@ -90,10 +90,10 @@ public class MemoryHub : IMessageHub
         }
     }
 
-    private async Task<Result<VoidResult>> DispatchMessage(AetherMessage message, CancellationToken cancellationToken)
+    private async Task<Result<Unit>> DispatchMessage(AetherMessage message, CancellationToken cancellationToken)
     {
         if (!handlers.TryGetValue(message.Subject!, out var handler))
-            return Result.Failure<VoidResult>("No channel registered for subject");
+            return Result.Error("No channel registered for subject");
 
         try
         {
@@ -127,7 +127,7 @@ public class MemoryHub : IMessageHub
         }
         catch (Exception ex)
         {
-            return Result.Failure<VoidResult>($"Failed to dispatch message: {ex.Message}");
+            return Result.Failure(ex);
         }
     }
 

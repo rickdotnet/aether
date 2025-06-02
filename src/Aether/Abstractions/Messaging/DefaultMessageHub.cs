@@ -41,7 +41,7 @@ internal class DefaultMessageHub : IDefaultMessageHub
     }
 
     /// <inheritdoc />
-    public Result<VoidResult> SetHub(string hubKey, IMessageHub hub) 
+    public Result<Unit> SetHub(string hubKey, IMessageHub hub) 
         => Result.Try(() => { hubs[hubKey] = hub; });
 
     /// <inheritdoc />
@@ -55,7 +55,7 @@ internal class DefaultMessageHub : IDefaultMessageHub
         => DefaultHub.AddHandler(endpointConfig, handler, cancellationToken);  
 
     /// <inheritdoc />
-    public Task<Result<VoidResult>> Send(AetherMessage message, CancellationToken cancellationToken) 
+    public Task<Result<Unit>> Send(AetherMessage message, CancellationToken cancellationToken) 
         => DefaultHub.Send(message, cancellationToken);
 
     /// <inheritdoc />

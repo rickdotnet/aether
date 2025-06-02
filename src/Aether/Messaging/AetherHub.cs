@@ -35,13 +35,18 @@ public sealed class AetherHub : IMessageHub
                 FullMode = BoundedChannelFullMode.Wait
             });
 
+        // this really should be unique per ENDPOINT
+        // and not per subject, since multiple endpoints
+        // can share the same subject. Will need to readd
+        // the concept of endpoint unique identifiers
+        // or endpoint groups to make them synchronous per group
         channels.TryAdd(subject, channel);
         innerHub.AddHandler(endpointConfig, async (context, ct) => await channel.Writer.WriteAsync(context, ct), cancellationToken);
 
         Task.Run(() => ProcessChannel(subject, channel, cts.Token), cancellationToken);
     }
 
-    public Task<Result<VoidResult>> Send(AetherMessage message, CancellationToken cancellationToken = default) 
+    public Task<Result<Unit>> Send(AetherMessage message, CancellationToken cancellationToken = default) 
         => innerHub.Send(message, cancellationToken);
 
     public Task<Result<AetherData>> Request(AetherMessage message, CancellationToken cancellationToken) 

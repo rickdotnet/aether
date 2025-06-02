@@ -28,7 +28,7 @@ public sealed class EndpointRegistration
     {
         return EndpointType != null || Handler != null
             ? true
-            : Result.Failure<bool>("Missing endpoint type or handler");
+            : Result.Error<bool>("Missing endpoint type or handler");
     }
 
     public static EndpointRegistration From<T>(EndpointConfig config)
