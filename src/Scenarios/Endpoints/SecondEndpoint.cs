@@ -6,7 +6,7 @@ namespace Scenarios.Endpoints;
 
 public class SecondEndpoint : IHandle<SomethingHappenedCommand> //, IReplyTo<Memory.TestRequest, string>
 {
-    public static readonly EndpointConfig EndpointConfig = EndpointConfig.For("second.endpoint").WithName("Second Endpoint");
+    public static readonly EndpointConfig EndpointConfig = EndpointConfig.For("second.endpoint");
 
     public Task Handle(SomethingHappenedCommand message, MessageContext context, CancellationToken cancellationToken)
     {

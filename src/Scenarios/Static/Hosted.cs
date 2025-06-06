@@ -2,7 +2,6 @@ using Aether;
 using Aether.Abstractions.Messaging;
 using Aether.Extensions.Microsoft.Hosting;
 using Aether.Providers.NATS;
-using Aether.Providers.NATS.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NATS.Extensions.Microsoft.DependencyInjection;
@@ -30,6 +29,7 @@ public class Hosted
                 .AddNatsHub(hub => hub
                     .AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle)
                     .AddHandler(new EndpointConfig("static.endpoint2"), StaticEndpoint.Handle)
+                    .AddHandler(new EndpointConfig("static.endpoint2"), StaticEndpoint.Handle, HandlerConfig.Concurrent(2))
                 );
             
             // creates a named store and keeps the default store as memory

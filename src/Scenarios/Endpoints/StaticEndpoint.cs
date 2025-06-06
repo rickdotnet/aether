@@ -6,10 +6,7 @@ namespace Scenarios.Endpoints;
 
 public class StaticEndpoint
 {
-    public static EndpointConfig EndpointConfig => new("static.endpoint")
-    {
-        EndpointName = "Static Endpoint"
-    };
+    public static EndpointConfig EndpointConfig => new("static.endpoint");
 
     public static async Task Handle(MessageContext context, CancellationToken cancellationToken)
     {

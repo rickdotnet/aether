@@ -3,24 +3,26 @@
 public sealed record EndpointConfig
 {
     /// <summary>
-    /// Optional namespace for isolation.
-    /// </summary>
-    public string? Namespace { get; set; }
-
-    /// <summary>
-    /// Display name
-    /// </summary>
-    public string? EndpointName { get; init; }
-
-    /// <summary>
     /// The subject to use for the endpoint.
     /// </summary>
     public string Subject { get; init; }
+
+    /// <summary>
+    /// Optional unique identifier for the endpoint.
+    /// </summary>
+    /// <remarks>If not provided, a unique identifier will be generated.</remarks>
+    public string? EndpointId { get; init; }
+    
+    /// <summary>
+    /// Optional namespace for isolation.
+    /// </summary>
+    public string? Namespace { get; init; }
 
     public string SubjectDelimiter { get; init; } = ".";
 
     // temporary solution until we decide what we want to do
     public string FullSubject => Namespace != null ? $"{Namespace}{SubjectDelimiter}{Subject}" : Subject;
+
 
     /// <summary>
     /// This is a temporary solution to hub specific configuration; will be revisited.
@@ -43,10 +45,7 @@ public sealed record EndpointConfig
 
 public static class EndpointConfigExtensions
 {
-    public static EndpointConfig WithName(this EndpointConfig config, string endpointName)
-        => config with { EndpointName = endpointName };
-
-    public static EndpointConfig WithNamespace(this EndpointConfig config, string @namespace)
+       public static EndpointConfig WithNamespace(this EndpointConfig config, string @namespace)
         => config with { Namespace = @namespace };
 
     public static EndpointConfig WithSubjectDelimiter(this EndpointConfig config, string delimiter)

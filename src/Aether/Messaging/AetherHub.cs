@@ -16,40 +16,52 @@ public sealed class AetherHub : IMessageHub
     {
         this.innerHub = innerHub;
     }
-    
+
     public static AetherHub For(IMessageHub innerHub) => new(innerHub);
 
     public void AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler, CancellationToken cancellationToken)
     {
-        // for now, only allowing one handler per subject
-        var subject = endpointConfig.FullSubject;
-        if (!handlers.TryAdd(subject, handler))
+        AddHandler(endpointConfig, HandlerConfig.Default, handler, cancellationToken);
+    }
+
+    public void AddHandler(
+        EndpointConfig endpointConfig,
+        HandlerConfig handlerConfig,
+        Func<MessageContext, CancellationToken, Task> handler,
+        CancellationToken cancellationToken
+    )
+    {
+        if (!handlerConfig.Validate())
+            throw new ArgumentException("Invalid handler configuration", nameof(handlerConfig));
+
+        var uniqueId = endpointConfig.EndpointId ?? Guid.NewGuid().ToString("N");
+        if (!handlers.TryAdd(uniqueId, handler))
             return;
 
-        // TODO: configurable channel options
+        var useSingleReader = handlerConfig.MaxProcessors <= 1;
         var channel = Channel.CreateBounded<MessageContext>(
-            new BoundedChannelOptions(1000)
+            new BoundedChannelOptions(handlerConfig.MessageBufferCapacity)
             {
-                SingleReader = true,
+                SingleReader = useSingleReader,
                 SingleWriter = true,
                 FullMode = BoundedChannelFullMode.Wait
             });
 
-        // this really should be unique per ENDPOINT
-        // and not per subject, since multiple endpoints
-        // can share the same subject. Will need to readd
-        // the concept of endpoint unique identifiers
-        // or endpoint groups to make them synchronous per group
-        channels.TryAdd(subject, channel);
-        innerHub.AddHandler(endpointConfig, async (context, ct) => await channel.Writer.WriteAsync(context, ct), cancellationToken);
+        var channelAdded = channels.TryAdd(uniqueId, channel);
+        if (!channelAdded)
+            return;
 
-        Task.Run(() => ProcessChannel(subject, channel, cts.Token), cancellationToken);
+        innerHub.AddHandler(endpointConfig, async (context, ct) => await channel.Writer.WriteAsync(context, ct), cancellationToken);
+        for (var i = 0; i < handlerConfig.MaxProcessors; i++)
+        {
+            Task.Run(() => ProcessChannel(uniqueId, channel, cts.Token), cancellationToken);
+        }
     }
 
-    public Task<Result<Unit>> Send(AetherMessage message, CancellationToken cancellationToken = default) 
+    public Task<Result<Unit>> Send(AetherMessage message, CancellationToken cancellationToken = default)
         => innerHub.Send(message, cancellationToken);
 
-    public Task<Result<AetherData>> Request(AetherMessage message, CancellationToken cancellationToken) 
+    public Task<Result<AetherData>> Request(AetherMessage message, CancellationToken cancellationToken)
         => innerHub.Request(message, cancellationToken);
 
     private async Task ProcessChannel(string subject, Channel<MessageContext> channel, CancellationToken cancellationToken)
@@ -75,10 +87,10 @@ public sealed class AetherHub : IMessageHub
     {
         await cts.CancelAsync();
         cts.Dispose();
-        
+
         foreach (var channel in channels.Values)
             channel.Writer.Complete();
-        
+
         await innerHub.DisposeAsync();
     }
 }

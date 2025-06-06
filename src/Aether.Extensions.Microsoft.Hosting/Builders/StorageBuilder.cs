@@ -2,7 +2,6 @@ using Aether.Abstractions.Hosting;
 using Aether.Abstractions.Storage;
 using Aether.Providers.Memory;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Aether.Extensions.Microsoft.Hosting.Builders;
 

@@ -16,22 +16,25 @@ internal class HubBuilder : IHubBuilder
         this.aetherBuilder = aetherBuilder;
         HubRegistration = new(hubName, hubType);
     }
-    
-    public IHubBuilder AddEndpoint<T>(EndpointConfig endpointConfig)
+
+    public IHubBuilder AddEndpoint<T>(EndpointConfig endpointConfig, HandlerConfig? handlerConfig = null)
     {
-        HubRegistration.AddRegistration<T>(endpointConfig);
+        EndpointRegistration registration = new(endpointConfig, typeof(T), handlerConfig);
+        HubRegistration.AddRegistration(registration);
         return this;
     }
 
-    public IHubBuilder AddEndpoint(EndpointConfig endpointConfig, Type endpointType)
+    public IHubBuilder AddEndpoint(EndpointConfig endpointConfig, Type endpointType, HandlerConfig? handlerConfig = null)
     {
-        HubRegistration.AddRegistration(endpointConfig, endpointType);
+        EndpointRegistration registration = new(endpointConfig, endpointType, handlerConfig);
+        HubRegistration.AddRegistration(registration); 
         return this;
     }
 
-    public IHubBuilder AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler)
+    public IHubBuilder AddHandler(EndpointConfig endpointConfig, Func<MessageContext, CancellationToken, Task> handler, HandlerConfig? handlerConfig = null)
     {
-        HubRegistration.AddRegistration(endpointConfig, handler);
+        EndpointRegistration registration = new(endpointConfig, handler, handlerConfig);
+        HubRegistration.AddRegistration(registration);
         return this;
     }
 

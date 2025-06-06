@@ -6,7 +6,6 @@ using Aether.Providers.NATS.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NATS.Client.Core;
-using NATS.Client.KeyValueStore;
 using NATS.Net;
 
 namespace Aether.Providers.NATS;

@@ -92,6 +92,7 @@ public class AetherBuilder : IAetherBuilder
                 var handler = new AetherHandler(registration.Handler!);
                 hub.AddHandler(
                     registration.Config,
+                    registration.HandlerConfig,
                     handler.Handle,
                     CancellationToken.None // cancellation will be handled in DefaultMessageHub
                 );
@@ -102,6 +103,7 @@ public class AetherBuilder : IAetherBuilder
                 var endpointHandler = new AetherHandler(registration.EndpointType!, endpointProvider);
                 hub.AddHandler(
                     registration.Config,
+                    registration.HandlerConfig,
                     endpointHandler.Handle,
                     CancellationToken.None // cancellation will be handled in DefaultMessageHub
                 );
