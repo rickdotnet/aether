@@ -57,29 +57,26 @@ public class AetherHandler
                 case 3 when
                     parameters[1].ParameterType == typeof(MessageContext) &&
                     parameters[2].ParameterType == typeof(CancellationToken):
-                    
+
                     messageType = parameters[0].ParameterType;
                     endpointMethod = new EndpointMethod(method, MethodType.MessageTypeAndMessageContext);
                     break;
                 // Slim signature: Handle(MessageType, CancellationToken)
-                // Fallback signature: Handle(MessageContext, CancellationToken)
                 case 2 when
+                    parameters[0].ParameterType != typeof(MessageContext) &&
                     parameters[1].ParameterType == typeof(CancellationToken):
-                    
+
                     messageType = parameters[0].ParameterType;
                     endpointMethod = new EndpointMethod(method, MethodType.MessageType);
                     break;
-                
-                // shouldn't need to fa
-                
-                // // Fallback signature: Handle(MessageContext, CancellationToken)
-                // case 2 when
-                //     parameters[0].ParameterType == typeof(MessageContext) &&
-                //     parameters[1].ParameterType == typeof(CancellationToken):
-                //     
-                //     messageType = typeof(MessageContext);
-                //     endpointMethod = new EndpointMethod(method, MethodType.MessageContext);
-                //     break;
+                // Fallback signature: Handle(MessageContext, CancellationToken)
+                case 2 when
+                    parameters[0].ParameterType == typeof(MessageContext) &&
+                    parameters[1].ParameterType == typeof(CancellationToken):
+
+                    messageType = typeof(MessageContext);
+                    endpointMethod = new EndpointMethod(method, MethodType.MessageContext);
+                    break;
             }
 
             if (endpointMethod != null && messageType != null)
@@ -106,15 +103,21 @@ public class AetherHandler
 
         var messageType = context.Message.MessageType ?? typeof(MessageContext);
         var endpointMethod = handleMethods.GetValueOrDefault(messageType);
+        if (endpointMethod == null && messageType != typeof(MessageContext))
+        {
+            // couldn't find message type, trying fallback
+            endpointMethod = handleMethods.GetValueOrDefault(typeof(MessageContext));
+        }
+
         if (endpointMethod == null)
             return Result.Error($"No Handle method found for type {messageType.Name}.");
 
-        var endpointInstance = endpointProvider.GetService(endpointType);
-        if (endpointInstance == null)
-            return Result.Error($"Failed to resolve endpoint instance for {endpointType.Name}.");
-
         try
         {
+            var endpointInstance = endpointProvider.GetService(endpointType);
+            if (endpointInstance == null)
+                return Result.Error($"Failed to resolve endpoint instance for {endpointType.Name}.");
+
             if (endpointMethod.HasReturnType && context.ReplyAvailable)
             {
                 var response = await endpointMethod.InvokeResponse(endpointInstance, context, cancellationToken);

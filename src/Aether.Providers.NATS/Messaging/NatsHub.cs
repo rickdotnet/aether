@@ -77,7 +77,8 @@ public sealed class NatsHub : IMessageHub
             )
             : null;
 
-        return Result.TryAsync(() => handler(new MessageContext(message, replyFunc), cancellationToken));
+        var messageContext = new MessageContext(message, replyFunc);
+        return Result.TryAsync(() => handler(messageContext, cancellationToken));
     }
 
     public async Task<Result<Unit>> Send(AetherMessage message, CancellationToken cancellationToken = default)
@@ -96,11 +97,13 @@ public sealed class NatsHub : IMessageHub
             return Result.Error<AetherData>("No subject specified");
 
         var natsHeaders = new NatsHeaders(message.Headers);
+        
         var result = await connection.RequestAsync<Memory<byte>,Memory<byte>>(
             subject: message.Subject!,
             data: message.Data,
             headers: natsHeaders, 
             cancellationToken: cancellationToken);
+        
         return Result.Success(new AetherData(result.Data));
     }
 

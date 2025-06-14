@@ -50,7 +50,7 @@ public class AetherBuilder : IAetherBuilder
             {
                 if (registration.HubName == IDefaultMessageHub.DefaultHubKey)
                 {
-                    RegisterHandlers(defaultAetherHub, registration.EndpointRegistrations);
+                    RegisterHandlers(defaultAetherHub, registration.EndpointRegistrations, serviceProvider);
                 }
                 else
                 {
@@ -83,7 +83,7 @@ public class AetherBuilder : IAetherBuilder
         //services.AddHostedService<AetherBackgroundService>();
     }
 
-    private static void RegisterHandlers(AetherHub hub, IReadOnlyList<EndpointRegistration> registrations, IServiceProvider? provider = null)
+    private static void RegisterHandlers(AetherHub hub, IReadOnlyList<EndpointRegistration> registrations, IServiceProvider provider)
     {
         foreach (var registration in registrations)
         {
@@ -99,7 +99,7 @@ public class AetherBuilder : IAetherBuilder
             }
             else
             {
-                var endpointProvider = new DefaultEndpointProvider(provider!);
+                var endpointProvider = new DefaultEndpointProvider(provider);
                 var endpointHandler = new AetherHandler(registration.EndpointType!, endpointProvider);
                 hub.AddHandler(
                     registration.Config,
