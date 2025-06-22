@@ -21,7 +21,7 @@ public class Memory
             memoryStore
         );
         
-        await client.Storage.Insert("test", "storage test");
+        await client.Storage.Upsert("test", "storage test");
         
         client.Messaging.AddHandler(StaticEndpoint.EndpointConfig, StaticEndpoint.Handle);
         client.Messaging.AddHandler(new EndpointConfig("static.endpoint2"), StaticEndpoint.Handle);

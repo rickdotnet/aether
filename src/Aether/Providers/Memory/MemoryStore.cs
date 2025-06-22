@@ -26,15 +26,15 @@ public class MemoryStore : IStore
             : valueResult!;
     }
 
-    public ValueTask<Result<AetherData>> Insert(string id, AetherData data, CancellationToken token = default)
+    public ValueTask<Result<AetherData>> Upsert(string id, AetherData data, CancellationToken token = default)
     {
         memoryCache.Set(id, data.Data);
         return ValueTask.FromResult(Result.Success(data));
     }
 
-    public async ValueTask<Result<T>> Insert<T>(string id, T data, CancellationToken token = default)
+    public async ValueTask<Result<T>> Upsert<T>(string id, T data, CancellationToken token = default)
     {
-        var result = await Insert(id, AetherData.Serialize(data), token);
+        var result = await Upsert(id, AetherData.Serialize(data), token);
         return result.Select(d => d.As<T>() ?? data);
     }
 
@@ -51,31 +51,6 @@ public class MemoryStore : IStore
     {
         IEnumerable<string> keys = memoryCache.GetKeys();
         return ValueTask.FromResult(Result.Success(keys));
-    }
-
-
-    public ValueTask<Result<IEnumerable<AetherData>>> List<TData>(FilterCriteria<TData>? filterCriteria = null,
-        CancellationToken token = default)
-    {
-        var keys = memoryCache.GetKeys();
-        var data = keys.Select(key => memoryCache.Get<Memory<byte>>(key)).Select(data => new AetherData(data)).ToList();
-
-        if (filterCriteria == null)
-            return ValueTask.FromResult(
-                Result.Success(data.AsEnumerable()));
-
-        var results = new List<AetherData>();
-        var filter = filterCriteria.Filter.Compile();
-        foreach (var item in data)
-        {
-            var temp = item.As<TData>();
-            if (temp != null && filter(temp))
-                results.Add(item);
-        }
-
-        return ValueTask.FromResult(
-            Result.Success(results.AsEnumerable())
-        );
     }
 }
 

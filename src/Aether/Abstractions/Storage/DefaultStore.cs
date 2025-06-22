@@ -40,12 +40,12 @@ public class DefaultStore :  IDefaultStore
             : valueResult!;
     }
 
-    public ValueTask<Result<AetherData>> Insert(string id, AetherData data, CancellationToken token = default) 
-        => Default.Insert(id, data, token);
+    public ValueTask<Result<AetherData>> Upsert(string id, AetherData data, CancellationToken token = default) 
+        => Default.Upsert(id, data, token);
 
-    public async ValueTask<Result<T>> Insert<T>(string id, T data, CancellationToken token = default)
+    public async ValueTask<Result<T>> Upsert<T>(string id, T data, CancellationToken token = default)
     {
-        var result = await Insert(id, AetherData.Serialize(data), token);
+        var result = await Upsert(id, AetherData.Serialize(data), token);
         return result.Select(d => d.As<T>() ?? data);
     }
 
@@ -54,7 +54,4 @@ public class DefaultStore :  IDefaultStore
 
     public ValueTask<Result<IEnumerable<string>>> ListKeys(CancellationToken token = default) 
         => Default.ListKeys(token);
-
-    public ValueTask<Result<IEnumerable<AetherData>>> List<TData>(FilterCriteria<TData>? filterCriteria = null, CancellationToken token = default) 
-        => Default.List(filterCriteria, token);
 }

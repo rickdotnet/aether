@@ -6,9 +6,8 @@ public interface IStore
 {
     ValueTask<Result<AetherData>> Get(string id, CancellationToken token = default);
     ValueTask<Result<T>> Get<T>(string id, CancellationToken token = default);
-    ValueTask<Result<AetherData>> Insert(string id, AetherData data, CancellationToken token = default);
-    ValueTask<Result<T>> Insert<T>(string id, T data, CancellationToken token = default);
+    ValueTask<Result<AetherData>> Upsert(string id, AetherData data, CancellationToken token = default);
+    ValueTask<Result<T>> Upsert<T>(string id, T data, CancellationToken token = default);
     ValueTask<Result<AetherData>> Delete(string id, CancellationToken token = default);
     ValueTask<Result<IEnumerable<string>>> ListKeys(CancellationToken token = default);
-    ValueTask<Result<IEnumerable<AetherData>>> List<TData>(FilterCriteria<TData>? filterCriteria = null, CancellationToken token = default);
 }

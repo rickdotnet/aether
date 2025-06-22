@@ -37,15 +37,15 @@ public class NatsKvStore : IStore
             : valueResult!;
     }
 
-    public async ValueTask<Result<AetherData>> Insert(string id, AetherData data, CancellationToken token = default)
+    public async ValueTask<Result<AetherData>> Upsert(string id, AetherData data, CancellationToken token = default)
     {
         await kvStore.PutAsync(id, data.Data, cancellationToken: token);
         return Result.Success(data);
     }
 
-    public async ValueTask<Result<T>> Insert<T>(string id, T data, CancellationToken token = default)
+    public async ValueTask<Result<T>> Upsert<T>(string id, T data, CancellationToken token = default)
     {
-        var result = await Insert(id, AetherData.Serialize(data), token);
+        var result = await Upsert(id, AetherData.Serialize(data), token);
         return result.Select(d => d.As<T>() ?? data);
     }
 
@@ -72,11 +72,5 @@ public class NatsKvStore : IStore
 
         keys.Sort();
         return keys;
-    }
-
-    public ValueTask<Result<IEnumerable<AetherData>>> List<TData>(FilterCriteria<TData>? filterCriteria = null,
-        CancellationToken token = default)
-    {
-        throw new NotImplementedException();
     }
 }

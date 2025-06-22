@@ -40,9 +40,9 @@ public class Hosted
         var hostTask = host.StartAsync();
 
         var aether = host.Services.GetRequiredService<AetherClient>();
-        await aether.Storage.Insert("test", "storage test");
+        await aether.Storage.Upsert("test", "storage test");
         var natsStore = aether.Storage.GetStore("nats").ValueOrDefault() ?? throw new Exception("NATS store not found");
-        await natsStore.Insert("test", "nats test");
+        await natsStore.Upsert("test", "nats test");
 
         var messaging = aether.Messaging;
         await messaging.Send(
