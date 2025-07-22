@@ -118,6 +118,8 @@ public class AetherHandler
             if (endpointInstance == null)
                 return Result.Error($"Failed to resolve endpoint instance for {endpointType.Name}.");
 
+            // this is for the Task<TResponse> Handle() scenarios, which
+            // are carryover from Apollo days. They should be tested
             if (endpointMethod.HasReturnType && context.ReplyAvailable)
             {
                 var response = await endpointMethod.InvokeResponse(endpointInstance, context, cancellationToken);
